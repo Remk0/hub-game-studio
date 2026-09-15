@@ -15,7 +15,7 @@ window.HUB_FIREBASE = {
        https://rrhub-6952b-default-rtdb.europe-west1.firebasedatabase.app
      Laat je hem leeg, dan werkt alles behalve het live rondlopen.
      Stap voor stap: docs/firebase-setup.md */
-  databaseURL:       "",
+  databaseURL:       "https://rrhub-6952b-default-rtdb.europe-west1.firebasedatabase.app/",
 
   projectId:         "rrhub-6952b",
   storageBucket:     "rrhub-6952b.firebasestorage.app",
