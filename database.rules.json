@@ -1,0 +1,34 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "hub": {
+      ".read": "auth != null",
+
+      "$uid": {
+        ".write": "auth != null && auth.uid == $uid",
+
+        ".validate": "newData.hasChildren(['n','w','x','y','t'])",
+
+        "n":  { ".validate": "newData.isString() && newData.val().length <= 22" },
+        "w":  { ".validate": "newData.isString() && newData.val().length <= 12" },
+        "x":  { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 4000" },
+        "y":  { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000" },
+        "d":  { ".validate": "newData.isNumber() && (newData.val() == 1 || newData.val() == -1)" },
+        "g":  { ".validate": "newData.isString() && newData.val().length <= 12" },
+        "c":  { ".validate": "newData.isString() && newData.val().length <= 64" },
+        "cu": { ".validate": "newData.isNumber()" },
+        "e":  { ".validate": "newData.isString() && newData.val().length <= 12" },
+        "t":  { ".validate": "newData.isNumber() && newData.val() <= now + 300000" },
+
+        "l": {
+          ".validate": "newData.hasChildren()",
+          "$veld": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 64" }
+        },
+
+        "$anders": { ".validate": false }
+      }
+    }
+  }
+}

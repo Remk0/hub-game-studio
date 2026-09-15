@@ -8,6 +8,15 @@
 window.HUB_FIREBASE = {
   apiKey:            "AIzaSyC4LsnxMaY7ahi_VFTcpwTuJykhzyJ7wJM",
   authDomain:        "rrhub-6952b.firebaseapp.com",
+
+  /* Voor het live zien van andere spelers in de zaal (en elkaar oppakken).
+     Zet hier de URL van je Realtime Database — die staat in de Firebase-console
+     onder Build > Realtime Database, bovenaan, en ziet er zo uit:
+       https://rrhub-6952b-default-rtdb.europe-west1.firebasedatabase.app
+     Laat je hem leeg, dan werkt alles behalve het live rondlopen.
+     Stap voor stap: docs/firebase-setup.md */
+  databaseURL:       "",
+
   projectId:         "rrhub-6952b",
   storageBucket:     "rrhub-6952b.firebasestorage.app",
   messagingSenderId: "151801875514",

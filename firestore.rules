@@ -13,7 +13,7 @@ service cloud.firestore {
     }
 
     function geldigeSpeler() {
-      return request.resource.data.keys().hasOnly(['name','t','msgs','runs'])
+      return request.resource.data.keys().hasOnly(['name','t','msgs','runs','coins','look','owned'])
           && request.resource.data.name is string
           && request.resource.data.name.size() > 0
           && request.resource.data.name.size() <= 22
@@ -21,6 +21,10 @@ service cloud.firestore {
           && request.resource.data.msgs.size() <= 24
           && request.resource.data.runs is list
           && request.resource.data.runs.size() <= 120
+          && (!('coins' in request.resource.data.keys())
+              || (request.resource.data.coins is number
+                  && request.resource.data.coins >= 0
+                  && request.resource.data.coins <= 1000000))
           && versTijdstip();
     }
 

@@ -83,34 +83,44 @@
     -webkit-appearance:none;appearance:none;background:#1d2540;color:#9aa2c8;
     border:1px solid rgba(180,200,255,0.3);border-radius:9px;padding:6px 11px;}
   #padToggle.on{background:#27406b;color:#cfe4ff;border-color:rgba(160,210,255,0.6);}
-  #gpad{position:absolute;left:0;right:0;bottom:calc(10px + env(safe-area-inset-bottom,0px));
-    z-index:3;display:flex;justify-content:space-between;align-items:flex-end;
-    padding:0 14px;pointer-events:none;}
+  /* bedieningsbalk over de volle breedte: lopen links, doen rechts */
+  #gpad{position:absolute;left:0;right:0;bottom:0;z-index:3;
+    display:flex;justify-content:space-between;align-items:flex-end;gap:10px;
+    padding:14px 12px calc(12px + env(safe-area-inset-bottom,0px));pointer-events:none;
+    background:linear-gradient(180deg,rgba(5,7,16,0) 0%,rgba(5,7,16,0.5) 38%,rgba(5,7,16,0.82) 100%);}
   #gpad[hidden]{display:none !important;}
-  #gpad .nav{display:grid;grid-template-columns:repeat(3,54px);grid-template-rows:repeat(3,44px);
-    gap:5px;pointer-events:auto;}
+  #gpad .nav{flex:1 1 0;max-width:47%;display:grid;
+    grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,46px);
+    gap:6px;pointer-events:auto;}
   #gpad .nav>.up{grid-area:1/2;} #gpad .nav>.dn{grid-area:3/2;}
-  #gpad .nav .mid{grid-area:2/1/3/4;display:grid;grid-template-columns:repeat(3,54px);gap:5px;}
+  #gpad .nav .mid{grid-area:2/1/3/4;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
   #gpad .nav .mid .l{grid-area:1/1;} #gpad .nav .mid .r{grid-area:1/3;}
-  #gpad .act{display:flex;gap:10px;align-items:center;pointer-events:auto;}
+  /* spellen die alleen links/rechts lopen krijgen één brede rij */
+  #gpad[data-dirs="2"] .nav{grid-template-rows:74px;}
+  #gpad[data-dirs="2"] .nav .mid{grid-area:1/1/2/4;}
+  #gpad .act{flex:1 1 0;max-width:47%;display:grid;
+    grid-auto-flow:column;grid-auto-columns:1fr;gap:9px;align-items:stretch;pointer-events:auto;}
   #gpad button{font-family:inherit;cursor:pointer;-webkit-appearance:none;appearance:none;
     background:rgba(14,18,34,0.78);color:#dfe6fb;border:1px solid rgba(180,200,255,0.34);
-    border-radius:13px;font-size:1.05rem;font-weight:700;touch-action:none;user-select:none;
+    border-radius:14px;font-size:1.15rem;font-weight:700;touch-action:none;user-select:none;
     backdrop-filter:blur(4px);box-shadow:0 6px 18px rgba(0,0,0,0.45);}
-  #gpad .act button{min-width:92px;padding:16px 14px;font-size:0.84rem;border-radius:999px;
-    letter-spacing:.04em;text-transform:uppercase;}
+  #gpad .act button{min-width:0;width:100%;padding:18px 8px;font-size:0.82rem;border-radius:16px;
+    letter-spacing:.04em;text-transform:uppercase;line-height:1.15;}
   #gpad .act .a{background:linear-gradient(180deg,#2f8a55,#186039);border-color:#7ff0ab;color:#f3fff7;}
   #gpad .act .b{background:linear-gradient(180deg,#3a4b78,#232c48);border-color:#94a8d8;}
   #gpad button.in{filter:brightness(1.5);}
   #play[data-mode="watch"] .bar{background:#122040;}
   #play[data-mode="watch"] #playName::after{content:' · meekijken';color:#7fd8ff;font-weight:600;}
   @media (max-width:560px){
-    #gpad .nav{grid-template-columns:repeat(3,46px);grid-template-rows:repeat(3,38px);}
-    #gpad .nav .mid{grid-template-columns:repeat(3,46px);}
-    #gpad .act button{min-width:76px;padding:14px 10px;font-size:0.76rem;}
+    #gpad{padding:12px 8px calc(10px + env(safe-area-inset-bottom,0px));gap:8px;}
+    #gpad .nav{max-width:48%;grid-template-rows:repeat(3,44px);gap:5px;}
+    #gpad[data-dirs="2"] .nav{grid-template-rows:70px;}
+    #gpad .act{max-width:48%;gap:7px;}
+    #gpad .act button{padding:16px 4px;font-size:0.72rem;}
     #enterWrap button{padding:10px 8px;flex:1 1 0;min-width:0;}
     #enterWrap button b{font-size:0.92rem;}
     #enterWrap button i{font-size:0.62rem;letter-spacing:.1em;}
+    #grab{bottom:calc(208px + env(safe-area-inset-bottom,0px));padding:7px 16px;}
     /* boven het looppad, anders liggen ze over elkaar heen */
     #enterWrap{bottom:calc(138px + env(safe-area-inset-bottom,0px));
       width:calc(100% - 24px);max-width:430px;justify-content:center;gap:8px;}
@@ -145,16 +155,77 @@
   #intro .mee{margin-top:14px;font-size:0.8rem;color:#9aa2c8;}
   #intro .mee b{color:#d6dcf6;}
 
-  #hof,#chat{position:fixed;inset:0;z-index:22;background:#080b16;display:flex;flex-direction:column;
+  #hof,#chat,#shop{position:fixed;inset:0;z-index:22;background:#080b16;display:flex;flex-direction:column;
     padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);}
-  #hof[hidden],#chat[hidden]{display:none !important;}
-  #hof .kop,#chat .kop{flex:0 0 auto;display:flex;align-items:center;gap:14px;padding:10px 16px;
+  #hof[hidden],#chat[hidden],#shop[hidden]{display:none !important;}
+  #hof .kop,#chat .kop,#shop .kop{flex:0 0 auto;display:flex;align-items:center;gap:14px;padding:10px 16px;
     background:#0d1122;border-bottom:1px solid rgba(180,200,255,0.16);flex-wrap:wrap;}
-  #hof h3,#chat h3{margin:0;font-size:1.02rem;font-weight:800;color:#f5a83c;}
-  #hofClose,#chatClose{font-family:inherit;font-size:0.86rem;font-weight:700;cursor:pointer;
+  #hof h3,#chat h3,#shop h3{margin:0;font-size:1.02rem;font-weight:800;color:#f5a83c;}
+  #hofClose,#chatClose,#shopClose{font-family:inherit;font-size:0.86rem;font-weight:700;cursor:pointer;
     background:#1d2540;color:#dfe6fb;border:1px solid rgba(180,200,255,0.3);
     border-radius:9px;padding:8px 15px;-webkit-appearance:none;appearance:none;}
-  #hofClose:hover,#chatClose:hover{background:#27314f;}
+  #hofClose:hover,#chatClose:hover,#shopClose:hover{background:#27314f;}
+
+  /* ---- munten, winkel en emotes ---- */
+  #wallet{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:12px;z-index:8;
+    font-family:inherit;cursor:pointer;-webkit-appearance:none;appearance:none;
+    display:flex;align-items:center;gap:7px;padding:8px 14px 8px 11px;
+    background:rgba(14,18,34,0.78);color:#f3c73f;border:1px solid rgba(243,199,63,0.42);
+    border-radius:999px;backdrop-filter:blur(5px);box-shadow:0 8px 22px rgba(0,0,0,0.45);
+    transition:transform .18s,box-shadow .18s;}
+  #wallet .mu{font-size:1rem;line-height:1;}
+  #wallet b{font-size:1rem;font-weight:800;letter-spacing:.02em;
+    font-variant-numeric:tabular-nums;}
+  #wallet:hover{background:rgba(24,30,54,0.86);}
+  #wallet.pop{transform:scale(1.14);box-shadow:0 0 0 4px rgba(243,199,63,0.22),0 8px 22px rgba(0,0,0,0.45);}
+  #emoteBar{position:fixed;right:12px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:7;
+    display:flex;gap:6px;}
+  #emoteBar[hidden]{display:none !important;}
+  #emoteBar button{font-family:inherit;font-size:1.15rem;line-height:1;cursor:pointer;
+    -webkit-appearance:none;appearance:none;width:46px;height:46px;border-radius:13px;
+    background:rgba(14,18,34,0.72);border:1px solid rgba(180,200,255,0.26);
+    backdrop-filter:blur(4px);}
+  #emoteBar button:hover{background:rgba(30,38,66,0.85);}
+  /* boven de spelen-knop, zodat ze elkaar niet in de weg zitten */
+  #grab{position:fixed;left:50%;transform:translateX(-50%);
+    bottom:calc(8.5% + 74px + env(safe-area-inset-bottom,0px));z-index:7;
+    font-family:inherit;cursor:pointer;-webkit-appearance:none;appearance:none;
+    display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 20px;
+    border-radius:14px;border:2px solid #b9a0ff;color:#f2ecff;
+    background:linear-gradient(180deg,#5b46a8,#3a2b74);box-shadow:0 12px 28px rgba(0,0,0,0.55);}
+  #grab[hidden]{display:none !important;}
+  #grab b{font-size:0.96rem;font-weight:800;}
+  #grab i{font-style:normal;font-size:0.66rem;font-weight:700;letter-spacing:.12em;
+    text-transform:uppercase;opacity:.85;}
+  #shop .saldo{margin-left:auto;display:flex;align-items:center;gap:6px;color:#f3c73f;
+    font-weight:800;background:rgba(243,199,63,0.1);border:1px solid rgba(243,199,63,0.35);
+    border-radius:999px;padding:5px 13px;font-variant-numeric:tabular-nums;}
+  #shop .winkel{flex:1 1 auto;display:flex;gap:16px;padding:12px 16px 0;min-height:0;}
+  #shop .pop{flex:0 0 172px;display:flex;flex-direction:column;align-items:center;gap:8px;}
+  #shop .pop canvas{width:150px;height:180px;}
+  #shop .pop p{margin:0;font-size:0.74rem;color:#8b92bb;text-align:center;line-height:1.4;}
+  #shop .waar{flex:1 1 auto;display:flex;flex-direction:column;min-width:0;min-height:0;}
+  #shop .tabs{padding:0 0 10px;}
+  #shop .spullen{flex:1 1 auto;overflow-y:auto;display:grid;gap:9px;padding-bottom:16px;
+    grid-template-columns:repeat(auto-fill,minmax(108px,1fr));align-content:start;}
+  #shop .spullen .item{font-family:inherit;cursor:pointer;-webkit-appearance:none;appearance:none;
+    display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 6px 8px;
+    border-radius:13px;border:1px solid rgba(180,200,255,0.18);background:rgba(255,255,255,0.035);
+    color:#dfe4f5;transition:.14s;}
+  #shop .spullen .item:hover{background:rgba(255,255,255,0.08);border-color:rgba(180,200,255,0.4);}
+  #shop .spullen .item.aan{border-color:#f5a83c;background:rgba(245,168,60,0.12);}
+  #shop .spullen .mini{width:76px;height:76px;}
+  #shop .spullen .nm{font-size:0.78rem;font-weight:700;}
+  #shop .spullen .pr{font-size:0.7rem;color:#9aa2c8;font-weight:700;}
+  #shop .spullen .item.aan .pr{color:#f5a83c;}
+  #shop .spullen .item.bezit:not(.aan) .pr{color:#7fd8a0;}
+  #shop .note{flex:0 0 auto;margin:0;padding:8px 16px 14px;font-size:0.76rem;color:#8b92bb;}
+  @media (max-width:620px){
+    #shop .winkel{flex-direction:column;gap:10px;}
+    #shop .pop{flex:0 0 auto;flex-direction:row;justify-content:center;}
+    #shop .pop canvas{width:96px;height:116px;}
+    #shop .pop p{text-align:left;max-width:18ch;}
+  }
   #netBadge{margin-left:auto;font-size:0.72rem;font-weight:700;letter-spacing:.04em;
     border-radius:20px;padding:5px 12px;}
   #netBadge.on{color:#8ff0b4;background:rgba(60,190,120,0.12);border:1px solid rgba(110,240,160,0.4);}
@@ -249,6 +320,11 @@
   <button id="watch" type="button" hidden><b>Meekijken</b><i>en meedoen</i></button>
 </div>
 <div id="pad" hidden></div>
+<button id="wallet" type="button" title="Naar de winkel">
+  <span class="mu">&#129689;</span><b id="walletNum">0</b>
+</button>
+<div id="emoteBar" hidden></div>
+<button id="grab" type="button" hidden><b>Optillen</b><i id="grabWie">iemand</i></button>
 <div id="play" hidden>
   <div class="bar">
     <button id="back" type="button">&larr; Terug naar de HUB</button>
@@ -292,6 +368,30 @@
     <button id="chatSend" type="button">Stuur</button>
   </div>
   <p class="note">Alle gesprekken zijn openbaar — iedereen in de hub leest mee op het chatbord.</p>
+</div>
+
+<div id="shop" hidden>
+  <div class="kop">
+    <button id="shopClose" type="button">&larr; Terug naar de HUB</button>
+    <h3>De Kraam</h3>
+    <span class="saldo"><span class="mu">&#129689;</span><b id="shopCoins">0</b></span>
+  </div>
+  <div class="winkel">
+    <div class="pop">
+      <canvas id="shopPrev" width="150" height="180"></canvas>
+      <p>Zo zien de anderen je in de zaal.</p>
+    </div>
+    <div class="waar">
+      <div id="shopTabs" class="tabs">
+        <button type="button" data-t="col" class="on">Kleur</button>
+        <button type="button" data-t="outfit">Outfit</button>
+        <button type="button" data-t="hat">Hoed</button>
+        <button type="button" data-t="emote">Emotes</button>
+      </div>
+      <div id="shopBody" class="spullen"></div>
+    </div>
+  </div>
+  <p class="note">Munten verdien je met potjes. Wat je hier uitgeeft telt niet mee voor het scorebord.</p>
 </div>
 
 <div id="intro">
@@ -3164,7 +3264,7 @@ const EMPTY=[['1.','—','—'],['2.','—','—'],['3.','—','—'],['4.','—
 function boardList(c,x,y,w,h,rows){
   c.fillStyle='rgba(5,7,14,0.9)'; c.fillRect(x,y,w,h);
   (rows||ROWS).forEach((r,i)=>{
-    const ry=y+30+i*26, you=i===4;
+    const ry=y+30+i*26, you=r[3]||(r.length<4&&i===4);
     if(you){
       c.strokeStyle='rgba(170,190,240,0.25)'; c.lineWidth=1.2;
       c.beginPath(); c.moveTo(x+9,ry-18); c.lineTo(x+w-9,ry-18); c.stroke();
@@ -3527,7 +3627,8 @@ function drawScreen(c,S,t){
   else if(S.kind==='giant') giantPreview(c,gameX,gy+hud,pw2,ph2,t);
   else if(S.kind==='monster') monsterPreview(c,gameX,gy+hud,pw2,ph2,t);
   else soonPreview(c,gameX,gy+hud,pw2,ph2,t);
-  boardList(c,boardX,gy+hud,bw,ph2,S.kind==='soon'?EMPTY:ROWS);
+  boardList(c,boardX,gy+hud,bw,ph2,
+    S.kind==='soon'?EMPTY:(typeof gameRows==='function'?gameRows(S.id):ROWS));
   c.globalAlpha=0.045; c.fillStyle='#9fc4ff';
   for(let yy=gy;yy<gy+gh;yy+=4) c.fillRect(gx,yy,gw,1.6);
   c.globalAlpha=1;
@@ -3671,6 +3772,7 @@ let PLAYERS=Object.create(null);            // id -> {name,msgs,runs,t}
 let PEERS=[];                               // wie er nu rondloopt
 let MINE={name:ME.name,t:Date.now(),msgs:[],runs:[]};
 let chatDirty=true, boardDirty=true, netTimer=null;
+let winkelVeldenMogen=true;   // tot Firestore ze weigert
 let playing=null, panel=null;      // welk spel / welk paneel staat open
 
 try{ const raw=LS.get('hub.mine',''); if(raw){ const o=JSON.parse(raw);
@@ -3686,10 +3788,24 @@ function pushNet(){                          // één schrijfactie per rustmomen
   if(!DB) return;
   clearTimeout(netTimer);
   netTimer=setTimeout(()=>{
-    DB.doc('players/'+ME.id).set({
+    const kaal={
       name:ME.name||'Speler', t:Date.now(),
       msgs:MINE.msgs.slice(-MAXMSG), runs:MINE.runs.slice(-MAXRUN)
-    }).catch(()=>{});
+    };
+    const vol=Object.assign({},kaal,{
+      coins:(typeof COINS==='number')?COINS:0,
+      look:(typeof LOOK==='object'&&LOOK)?LOOK:null,
+      owned:(typeof OWNED==='object'&&OWNED)?OWNED:null
+    });
+    // staan de nieuwe regels nog niet in de console, dan weigert Firestore de
+    // extra velden. Dan blijven chat en scores gewoon werken, alleen je munten
+    // en uiterlijk blijven op dit apparaat.
+    DB.doc('players/'+ME.id).set(winkelVeldenMogen?vol:kaal).catch(()=>{
+      if(!winkelVeldenMogen) return;
+      winkelVeldenMogen=false;
+      kaal.t=Date.now();
+      DB.doc('players/'+ME.id).set(kaal).catch(()=>{});
+    });
   },900);
 }
 function commit(){ saveLocal(); pushNet(); }
@@ -3716,7 +3832,9 @@ async function netInit(){
         snap.docs.forEach(d=>{
           const v=d.data()||{};
           next[d.id]={ name:clean(v.name,22)||'Speler', t:+v.t||0,
-                       msgs:Array.isArray(v.msgs)?v.msgs:[], runs:Array.isArray(v.runs)?v.runs:[] };
+                       msgs:Array.isArray(v.msgs)?v.msgs:[], runs:Array.isArray(v.runs)?v.runs:[],
+                       coins:+v.coins||0, look:v.look||null, owned:v.owned||null };
+          if(d.id===ME.id) haalWinkelOp(next[d.id]);
         });
         next[ME.id]=MINE;                    // eigen tekst meteen zichtbaar
         PLAYERS=next; chatDirty=boardDirty=true;
@@ -3809,7 +3927,9 @@ function addRun(gameId,v){
   if(MINE.runs.length>MAXRUN) MINE.runs.shift();
   commit();
   const G=GAMES.find(g=>g.id===gameId);
-  showToast('Score genoteerd: '+(G?G.name:gameId)+' — '+Math.round(v));
+  const munt=(typeof verdien==='function')?verdien(gameId,v):0;
+  showToast('Score genoteerd: '+(G?G.name:gameId)+' — '+Math.round(v)
+            +(munt?'   ·   +'+munt+' munten':''));
 }
 function periodStart(k){
   const d=new Date();
@@ -3905,11 +4025,35 @@ function boardText(c,px,rows,empty){
   c.restore(); c.restore();
 }
 let _hofRows=[], _chatRows=[], _rowsAt=0;
+/* de vijf beste per spel, voor het schermpje in de kast */
+let _gameRows=Object.create(null);
+function kort(n){ n=String(n||'Speler'); return n.length>8?n.slice(0,7)+'.':n; }
+function gameRows(gid){
+  return _gameRows[gid]||EMPTY;
+}
+function buildGameRows(){
+  GAMES.forEach(G=>{
+    const top=ranking(G.id,'all');
+    const rows=[];
+    for(let i=0;i<5;i++){
+      const r=top[i];
+      rows.push(r?[(i+1)+'.',kort(r.name),String(r.v),r.id===ME.id]
+                 :[(i+1)+'.','—','—',false]);
+    }
+    // sta je er niet bij, dan neemt je eigen beste de laatste regel over
+    if(!top.slice(0,5).some(r=>r.id===ME.id)){
+      const mij=top.filter(r=>r.id===ME.id)[0];
+      rows[4]=['—','Jij',mij?String(mij.v):'0',true];
+    }
+    _gameRows[G.id]=rows;
+  });
+}
 function refreshBoardRows(){
   if(!boardDirty&&!chatDirty&&T*1000-_rowsAt<800) return;
   _rowsAt=T*1000;
   if(boardDirty){
     boardDirty=false;
+    buildGameRows();
     _hofRows=ranking('all','all').slice(0,5).map((r,i)=>{
       const G=GAMES.find(g=>g.id===r.g);
       return {a:(i+1)+'. '+r.name, b:r.v+' '+unitFor(r.g), c:G?G.name:'', hi:r.id===ME.id};
@@ -3926,6 +4070,868 @@ function drawSocialBoards(c){
   refreshBoardRows();
   boardText(c,HOF_PX,_hofRows,'nog geen scores');
   boardText(c,CHAT_PX,_chatRows,'nog geen berichten');
+}
+
+/* =====================================================================
+   FIGUREN — iedereen een eigen kop, bouw en kleren
+   Eén tekenfunctie voor de speler, de andere spelers en de bewoners van
+   de zaal. Het uiterlijk komt uit de naam, dus je herkent elkaar meteen,
+   en wat je in de winkel koopt gaat er overheen.
+===================================================================== */
+const SKINS   =['#f2d3b6','#e5b68d','#cf9560','#a76f42','#7b4d2c','#50331e'];
+const HAIRCOL =['#191310','#3b2515','#6d431f','#a9702d','#ddc38c','#8e2f22','#2c3142','#cbc6bf'];
+const HAIRSTYLE=['kort','bos','staart','knot','stekels','kaal','krullen','pony'];
+
+const OUTFITS=[
+  {id:'tuniek',    naam:'Tuniek',       prijs:0},
+  {id:'mantel',    naam:'Reismantel',   prijs:70},
+  {id:'smid',      naam:'Smidsschort',  prijs:90},
+  {id:'duikpak',   naam:'Duikpak',      prijs:120},
+  {id:'harnas',    naam:'Harnas',       prijs:150},
+  {id:'kaper',     naam:'Kapersjas',    prijs:190},
+  {id:'ruimtepak', naam:'Ruimtepak',    prijs:240},
+  {id:'nar',       naam:'Narrenpak',    prijs:300}
+];
+const OUTFITCOL=['#4a6fb5','#2f8a55','#9c3f3f','#7a4aa8','#c07a1e','#2a7f8c',
+                 '#b0553f','#3f4a6b','#8d9a3c','#b23f76','#3b6f3b','#8a6a3a'];
+const HATS=[
+  {id:'geen',     naam:'Niets',        prijs:0},
+  {id:'muts',     naam:'Wollen muts',  prijs:40},
+  {id:'pet',      naam:'Pet',          prijs:55},
+  {id:'punt',     naam:'Punthoed',     prijs:80},
+  {id:'veer',     naam:'Verenhoed',    prijs:110},
+  {id:'helm',     naam:'Helm',         prijs:130},
+  {id:'vissenkom',naam:'Vissenkom',    prijs:160},
+  {id:'hoorns',   naam:'Hoorns',       prijs:190},
+  {id:'astro',    naam:'Ruimtehelm',   prijs:240},
+  {id:'kroon',    naam:'Kroon',        prijs:450}
+];
+const EMOTES=[
+  {id:'zwaai', naam:'Zwaaien', prijs:0,   glyph:'👋'},
+  {id:'wijs',  naam:'Wijzen',  prijs:50,  glyph:'👉'},
+  {id:'juich', naam:'Juichen', prijs:70,  glyph:'🙌'},
+  {id:'buig',  naam:'Buigen',  prijs:90,  glyph:'🙇'},
+  {id:'lach',  naam:'Lachen',  prijs:110, glyph:'😄'},
+  {id:'dans',  naam:'Dansen',  prijs:160, glyph:'💃'}
+];
+const BUILDS=[14,18,22];          // schouderbreedte
+const HEIGHTS=[0.93,1,1.07];
+
+function hash32(s){
+  let h=2166136261>>>0;
+  s=String(s||'x');
+  for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619)>>>0; }
+  return h>>>0;
+}
+function lookFrom(seed,ruim){
+  const h=hash32(seed);
+  return {
+    sk:h%SKINS.length,
+    ha:(h>>>3)%HAIRCOL.length,
+    hs:(h>>>7)%HAIRSTYLE.length,
+    ou:ruim?((h>>>11)%OUTFITS.length):0,
+    oc:ruim?((h>>>15)%OUTFITCOL.length):((h>>>15)%6),   // spelers beginnen in een gratis kleur
+    ht:ruim?(((h>>>19)%3===0)?((h>>>21)%HATS.length):0):0,
+    bd:(h>>>25)%3,
+    hg:(h>>>28)%3
+  };
+}
+function schaduw(hex,f){
+  const n=parseInt(hex.slice(1),16);
+  let r=(n>>16)&255, g2=(n>>8)&255, b=n&255;
+  if(f<1){ r*=f; g2*=f; b*=f; }
+  else { r+=(255-r)*(f-1); g2+=(255-g2)*(f-1); b+=(255-b)*(f-1); }
+  return 'rgb('+(r|0)+','+(g2|0)+','+(b|0)+')';
+}
+
+/* ---------------- onderdelen ---------------- */
+function tekenHaar(c,stijl,col,hr){
+  c.fillStyle=col;
+  if(stijl==='kaal'){
+    c.beginPath(); c.arc(0,-66,hr,Math.PI*1.08,Math.PI*1.92); c.fill();
+    return;
+  }
+  if(stijl==='stekels'){
+    c.beginPath(); c.arc(0,-66,hr+0.6,Math.PI,0); c.fill();
+    for(let i=-2;i<=2;i++){
+      c.beginPath();
+      c.moveTo(i*4-2.6,-72); c.lineTo(i*4,-83); c.lineTo(i*4+2.6,-72);
+      c.fill();
+    }
+    return;
+  }
+  // basiskap
+  c.beginPath();
+  c.moveTo(-hr-1.2,-64);
+  c.quadraticCurveTo(-hr-1.6,-80,0,-80);
+  c.quadraticCurveTo(hr+1.6,-80,hr+1.2,-64);
+  c.quadraticCurveTo(hr-1,-70,4,-70.5);
+  c.quadraticCurveTo(-4,-69,-hr+1,-64);
+  c.fill();
+  if(stijl==='bos'){
+    c.beginPath(); c.ellipse(0,-74,hr+3.4,hr+1.4,0,Math.PI,0); c.fill();
+    c.beginPath(); c.ellipse(-hr-1,-66,3.2,5.4,0,0,6.3); c.fill();
+    c.beginPath(); c.ellipse(hr+1,-66,3.2,5.4,0,0,6.3); c.fill();
+  } else if(stijl==='krullen'){
+    for(let i=0;i<7;i++){
+      const a=Math.PI+i*(Math.PI/6);
+      c.beginPath(); c.arc(Math.cos(a)*(hr+1),-66+Math.sin(a)*(hr+1),3.1,0,6.3); c.fill();
+    }
+  } else if(stijl==='staart'){
+    c.beginPath();
+    c.moveTo(-hr+1,-72); c.quadraticCurveTo(-hr-9,-68,-hr-7,-50);
+    c.quadraticCurveTo(-hr-2,-60,-hr+2,-66); c.fill();
+  } else if(stijl==='knot'){
+    c.beginPath(); c.arc(0,-84,5.2,0,6.3); c.fill();
+  } else if(stijl==='pony'){
+    c.beginPath();
+    c.moveTo(-hr-1,-68); c.lineTo(hr+1,-68); c.lineTo(hr-1,-62); c.lineTo(-hr+1,-63);
+    c.fill();
+  }
+}
+function tekenHoed(c,id,col,hr){
+  if(!id||id==='geen') return;
+  if(id==='muts'){
+    c.fillStyle=col; c.beginPath();
+    c.moveTo(-hr-1.5,-70); c.quadraticCurveTo(0,-88,hr+1.5,-70); c.closePath(); c.fill();
+    c.fillStyle=schaduw(col,1.35); c.fillRect(-hr-2,-71.5,(hr+2)*2,4.5);
+    c.beginPath(); c.arc(0,-87,3,0,6.3); c.fill();
+  } else if(id==='pet'){
+    c.fillStyle=col; c.beginPath();
+    c.moveTo(-hr-1,-71); c.quadraticCurveTo(0,-84,hr+1,-71); c.closePath(); c.fill();
+    c.beginPath(); c.ellipse(hr+3,-70.5,7.5,2.4,0,0,6.3); c.fill();
+  } else if(id==='punt'){
+    c.fillStyle=col; c.beginPath();
+    c.moveTo(-hr-3,-70); c.lineTo(2,-100); c.lineTo(hr+3,-70); c.closePath(); c.fill();
+    c.fillStyle=schaduw(col,0.7); c.fillRect(-hr-4.5,-72,(hr+4.5)*2,4);
+  } else if(id==='veer'){
+    c.fillStyle=col; c.beginPath();
+    c.moveTo(-hr-2,-70); c.quadraticCurveTo(0,-86,hr+2,-70); c.closePath(); c.fill();
+    c.fillStyle=schaduw(col,0.65); c.fillRect(-hr-5,-71.5,(hr+5)*2,3.4);
+    c.strokeStyle='#e8d9a6'; c.lineWidth=2.4; c.lineCap='round';
+    c.beginPath(); c.moveTo(-hr-2,-76); c.quadraticCurveTo(-hr-12,-88,-hr-4,-94); c.stroke();
+  } else if(id==='helm'){
+    c.fillStyle='#9aa3b4'; c.beginPath();
+    c.arc(0,-69,hr+2.2,Math.PI,0); c.lineTo(hr+2.2,-62); c.lineTo(-hr-2.2,-62); c.fill();
+    c.fillStyle='#7c8496'; c.fillRect(-1.6,-72,3.2,14);
+    c.fillStyle='#b9c1d0'; c.fillRect(-hr-2.2,-72,(hr+2.2)*2,2.4);
+  } else if(id==='hoorns'){
+    c.fillStyle='#e4dcc6';
+    [-1,1].forEach(sd=>{
+      c.beginPath();
+      c.moveTo(sd*(hr-1),-73); c.quadraticCurveTo(sd*(hr+9),-84,sd*(hr+4),-94);
+      c.quadraticCurveTo(sd*(hr+3),-82,sd*(hr-4),-72); c.fill();
+    });
+    c.fillStyle=schaduw(col,0.8); c.fillRect(-hr-1,-73,(hr+1)*2,3.4);
+  } else if(id==='vissenkom'){
+    c.fillStyle='rgba(150,220,255,0.26)';
+    c.beginPath(); c.arc(0,-68,hr+6,0,6.3); c.fill();
+    c.strokeStyle='rgba(190,240,255,0.7)'; c.lineWidth=1.6;
+    c.beginPath(); c.arc(0,-68,hr+6,0,6.3); c.stroke();
+    c.fillStyle='rgba(255,255,255,0.4)';
+    c.beginPath(); c.ellipse(-5,-74,3.4,2,-0.5,0,6.3); c.fill();
+  } else if(id==='astro'){
+    c.fillStyle='rgba(225,235,255,0.35)';
+    c.beginPath(); c.arc(0,-68,hr+6,0,6.3); c.fill();
+    c.fillStyle='#e9eefb';
+    c.beginPath(); c.arc(0,-68,hr+6,Math.PI*1.1,Math.PI*1.9); c.fill();
+    c.fillStyle='#f0b93c';
+    c.beginPath(); c.ellipse(1,-68,hr+2,5.6,0,0,6.3); c.fill();
+    c.strokeStyle='#cfd8ea'; c.lineWidth=1.8;
+    c.beginPath(); c.arc(0,-68,hr+6,0,6.3); c.stroke();
+  } else if(id==='kroon'){
+    c.fillStyle='#f3c73f';
+    c.beginPath();
+    c.moveTo(-hr-1,-72); c.lineTo(-hr-1,-80); c.lineTo(-hr/2,-75); c.lineTo(0,-83);
+    c.lineTo(hr/2,-75); c.lineTo(hr+1,-80); c.lineTo(hr+1,-72); c.closePath(); c.fill();
+    c.fillStyle='#c9a021'; c.fillRect(-hr-1,-73.5,(hr+1)*2,3);
+    c.fillStyle='#e0533f'; c.beginPath(); c.arc(0,-77,2,0,6.3); c.fill();
+  }
+}
+function tekenRomp(c,outfit,col,br,pose){
+  const hip=-34, sch=-57;
+  const don=schaduw(col,0.62), lic=schaduw(col,1.3);
+  if(outfit==='mantel'){                       // kap en mantel erachter
+    c.fillStyle=don;
+    c.beginPath();
+    c.moveTo(-br-4,hip+4); c.lineTo(-br-1,sch+3);
+    c.lineTo(br+1,sch+3); c.lineTo(br+4,hip+4); c.closePath(); c.fill();
+  }
+  if(outfit==='ruimtepak'){                    // rugzak
+    c.fillStyle='#9aa3b4'; c.fillRect(-br-5,sch+5,5.5,20);
+  }
+  // basisromp
+  c.fillStyle=col;
+  c.beginPath();
+  c.moveTo(-br,sch+2); c.lineTo(br,sch+2);
+  c.quadraticCurveTo(br+1.5,hip+8,br-2,hip);
+  c.lineTo(-br+2,hip); c.quadraticCurveTo(-br-1.5,hip+8,-br,sch+2);
+  c.closePath(); c.fill();
+  c.strokeStyle='rgba(10,12,24,0.45)'; c.lineWidth=1.3; c.stroke();
+
+  if(outfit==='harnas'){
+    c.fillStyle='#aeb6c6';
+    c.beginPath(); c.moveTo(-br+1,sch+3); c.lineTo(br-1,sch+3);
+    c.lineTo(br-3,hip+3); c.lineTo(-br+3,hip+3); c.closePath(); c.fill();
+    c.fillStyle='#8b93a5';
+    c.beginPath(); c.ellipse(-br,sch+4,5.2,4,0,0,6.3); c.fill();
+    c.beginPath(); c.ellipse(br,sch+4,5.2,4,0,0,6.3); c.fill();
+    c.strokeStyle='#6f7788'; c.lineWidth=1.3;
+    c.beginPath(); c.moveTo(0,sch+5); c.lineTo(0,hip+3); c.stroke();
+  } else if(outfit==='duikpak'){
+    c.fillStyle=schaduw(col,0.55);
+    c.beginPath(); c.ellipse(0,sch+13,br-3,7,0,0,6.3); c.fill();
+    c.fillStyle='#bfe6ff';
+    c.beginPath(); c.ellipse(0,sch+13,br-6,4.4,0,0,6.3); c.fill();
+    c.strokeStyle='#8fb9cf'; c.lineWidth=2;
+    c.beginPath(); c.moveTo(br-2,sch+8); c.quadraticCurveTo(br+7,sch+16,br+2,hip+2); c.stroke();
+  } else if(outfit==='ruimtepak'){
+    c.fillStyle=lic; c.fillRect(-br+2,sch+6,br*2-4,3);
+    c.fillStyle='#2b3348';
+    c.beginPath(); c.moveTo(-6,sch+12); c.lineTo(6,sch+12); c.lineTo(6,sch+21); c.lineTo(-6,sch+21); c.fill();
+    c.fillStyle='#7fe08a'; c.fillRect(-4,sch+14,3,3);
+    c.fillStyle='#f0b93c'; c.fillRect(1,sch+14,3,3);
+  } else if(outfit==='smid'){
+    c.fillStyle=schaduw('#6b4a2a',1);
+    c.beginPath(); c.moveTo(-br+3,sch+6); c.lineTo(br-3,sch+6);
+    c.lineTo(br-1,hip); c.lineTo(-br+1,hip); c.closePath(); c.fill();
+    c.strokeStyle='#4a3119'; c.lineWidth=1.6;
+    c.beginPath(); c.moveTo(-br+3,sch+6); c.lineTo(-3,sch+1); c.stroke();
+    c.beginPath(); c.moveTo(br-3,sch+6); c.lineTo(3,sch+1); c.stroke();
+  } else if(outfit==='kaper'){
+    c.fillStyle=don;
+    c.beginPath(); c.moveTo(-br,sch+3); c.lineTo(-2,sch+4); c.lineTo(-4,hip+1);
+    c.lineTo(-br-1,hip+1); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(br,sch+3); c.lineTo(2,sch+4); c.lineTo(4,hip+1);
+    c.lineTo(br+1,hip+1); c.closePath(); c.fill();
+    c.fillStyle='#e8e2d0'; c.fillRect(-2.4,sch+3,4.8,10);
+  } else if(outfit==='nar'){
+    c.fillStyle=schaduw(col,1.55);
+    c.beginPath(); c.moveTo(0,sch+2); c.lineTo(br,sch+2);
+    c.quadraticCurveTo(br+1.5,hip+8,br-2,hip); c.lineTo(0,hip); c.closePath(); c.fill();
+    c.fillStyle=don;
+    for(let i=-2;i<=2;i++){ c.beginPath(); c.arc(i*4.6,sch+4,2.6,0,6.3); c.fill(); }
+  } else {
+    // tuniek en mantel: riem en kraag
+    c.fillStyle=don; c.fillRect(-br+1,hip-6,br*2-2,5);
+    c.fillStyle=lic;
+    c.beginPath(); c.moveTo(-5,sch+2); c.lineTo(5,sch+2); c.lineTo(0,sch+10); c.closePath(); c.fill();
+    c.fillStyle='#d9b64a'; c.fillRect(-2.6,hip-6.4,5.2,5.8);
+  }
+}
+
+/* ---------------- het poppetje ---------------- */
+function avatar(c,x,y,k,walk,dir,pose,look,rim){
+  const L=look||lookFrom('gast');
+  const br=BUILDS[L.bd%BUILDS.length]|0;
+  const hg=HEIGHTS[L.hg%HEIGHTS.length];
+  const huid=SKINS[L.sk%SKINS.length];
+  const haar=HAIRCOL[L.ha%HAIRCOL.length];
+  const stijl=HAIRSTYLE[L.hs%HAIRSTYLE.length];
+  const kleed=OUTFITS[(L.ou||0)%OUTFITS.length].id;
+  const kleur=OUTFITCOL[(L.oc||0)%OUTFITCOL.length];
+  const hoed=HATS[(L.ht||0)%HATS.length].id;
+  const hr=10;
+
+  c.save();
+  c.fillStyle='rgba(0,0,0,0.4)';
+  c.beginPath(); c.ellipse(x,y+2,18*k,5.2*k,0,0,6.3); c.fill();
+  c.translate(x,y); c.scale(dir*k,k*hg);
+
+  const s=Math.sin(walk)*7;                    // loopslag
+  const bob=pose==='held'?0:Math.abs(Math.cos(walk))*1.2;
+  let armV=-s*0.5, armA=s*0.5, been=s, beenA=-s;
+  let kop=0, romphoek=0;
+  if(pose==='run'){ armV=-9; armA=9; been=10; beenA=-10; }
+  else if(pose==='fight'){ armV=-13; armA=-9; }
+  else if(pose==='carry'){ armV=-16; armA=-16; }
+  else if(pose==='held'){ armV=8; armA=10; been=6; beenA=-5; romphoek=0.32; }
+  else if(pose==='zwaai'){ armV=-22; }
+  else if(pose==='juich'){ armV=-24; armA=-24; }
+  else if(pose==='buig'){ romphoek=0.5; kop=3; }
+  else if(pose==='wijs'){ armV=-6; }
+  else if(pose==='dans'){ armV=-18-s; armA=-18+s; }
+
+  c.translate(0,-bob);
+  const bk=schaduw(huid,0.9);
+
+  // achterste arm
+  c.strokeStyle=schaduw(kleed==='smid'?huid:kleur,0.6); c.lineWidth=6.4; c.lineCap='round';
+  c.beginPath(); c.moveTo(-br*0.82,-54); c.lineTo(-br*1.02+armA,-35); c.stroke();
+  c.fillStyle=bk; c.beginPath(); c.arc(-br*1.02+armA,-34,3.1,0,6.3); c.fill();
+
+  // benen
+  c.strokeStyle='rgba(10,12,24,0.45)'; c.lineWidth=9.4; c.lineCap='round';
+  c.beginPath(); c.moveTo(-3.2,-32); c.lineTo(-3.6+been*0.5,-5); c.stroke();
+  c.beginPath(); c.moveTo(3.2,-32); c.lineTo(3.6+beenA*0.5,-5); c.stroke();
+  c.strokeStyle=schaduw(kleur,0.42); c.lineWidth=7.4;
+  c.beginPath(); c.moveTo(-3.2,-32); c.lineTo(-3.6+been*0.5,-5); c.stroke();
+  c.beginPath(); c.moveTo(3.2,-32); c.lineTo(3.6+beenA*0.5,-5); c.stroke();
+  c.fillStyle='#231a12';
+  c.beginPath(); c.ellipse(-3.4+been*0.5,-3,5.4,3.4,0,0,6.3); c.fill();
+  c.beginPath(); c.ellipse(3.4+beenA*0.5,-3,5.4,3.4,0,0,6.3); c.fill();
+
+  c.save();
+  if(romphoek){ c.translate(0,-34); c.rotate(romphoek); c.translate(0,34); }
+
+  tekenRomp(c,kleed,kleur,br,pose);
+
+  // voorste arm
+  c.strokeStyle='rgba(10,12,24,0.5)'; c.lineWidth=8.6; c.lineCap='round';
+  c.beginPath(); c.moveTo(br*0.82,-54); c.lineTo(br*1.02+armV,-35); c.stroke();
+  c.strokeStyle=(kleed==='smid')?huid:schaduw(kleur,1.12); c.lineWidth=6.6;
+  c.beginPath(); c.moveTo(br*0.82,-54); c.lineTo(br*1.02+armV,-35); c.stroke();
+  c.fillStyle=huid; c.beginPath(); c.arc(br*1.02+armV,-34,3.4,0,6.3); c.fill();
+
+  // hals en hoofd
+  c.fillStyle=bk; c.fillRect(-3,-60,6,5);
+  c.fillStyle=huid;
+  c.beginPath(); c.ellipse(0,-66+kop,hr,hr+1.4,0,0,6.3); c.fill();
+  c.strokeStyle='rgba(10,12,24,0.42)'; c.lineWidth=1.2; c.stroke();
+  c.fillStyle=schaduw(huid,0.86);
+  c.beginPath(); c.ellipse(-hr*0.62,-66+kop,2.4,3.2,0,0,6.3); c.fill();
+  // oor
+  c.beginPath(); c.arc(-hr+1,-65+kop,2.2,0,6.3); c.fill();
+
+  c.save(); c.translate(0,kop);
+  tekenHaar(c,stijl,haar,hr);
+  tekenHoed(c,hoed,kleur,hr);
+  c.restore();
+
+  // ogen en mond
+  c.fillStyle='#15100c';
+  c.beginPath(); c.arc(2.6,-67+kop,1.5,0,6.3); c.fill();
+  c.beginPath(); c.arc(-2.8,-67+kop,1.2,0,6.3); c.fill();
+  c.strokeStyle='#6b3b2c'; c.lineWidth=1.2; c.lineCap='round';
+  c.beginPath();
+  if(pose==='lach'||pose==='juich'){ c.arc(1,-61.5+kop,2.6,0.1,Math.PI-0.1); }
+  else { c.moveTo(0.4,-61.6+kop); c.lineTo(3.4,-61.6+kop); }
+  c.stroke();
+
+  c.restore();
+
+  if(rim){
+    c.strokeStyle=rim; c.lineWidth=1.8;
+    c.beginPath(); c.ellipse(0,-66+kop,hr+1.2,hr+2.6,0,0,6.3); c.stroke();
+  }
+  c.restore();
+}
+
+/* =====================================================================
+   MUNTEN EN DE WINKEL
+   Potjes leveren munten op, los van het scorebord: uitgeven verandert je
+   records niet. Je saldo staat altijd in beeld, de kraam staat in de zaal.
+===================================================================== */
+const SHOP_PX=1650;
+STATIONS.push({id:'shop',name:'De Kraam',kind:'board',px:SHOP_PX,y:706,rx:150,ry:46,status:'live'});
+
+/* wat een potje opbrengt — elk spel telt anders, dus elk zijn eigen maat */
+const MUNTMAAT={toren:0.06,nest:0.25,spook:1.5,oche:0.2,reus:0.12,hal:0.8};
+
+function leesJSON(sleutel,terug){
+  try{ const r=LS.get(sleutel,''); return r?JSON.parse(r):terug; }catch(e){ return terug; }
+}
+let COINS=Math.max(0,Math.round(+LS.get('hub.coins',0)||0));
+let OWNED=leesJSON('hub.owned',null)||{outfit:{},hat:{},col:{},emote:{}};
+['outfit','hat','col','emote'].forEach(k=>{ if(!OWNED[k]) OWNED[k]={}; });
+let LOOK=leesJSON('hub.look',null)||lookFrom(ME.id);
+let MYEMOTE=null;                      // {id,t} — wat je nu boven je hoofd doet
+
+function gratisSpul(){                 // alles wat niets kost heb je gewoon
+  OUTFITS.forEach((o,i)=>{ if(!o.prijs) OWNED.outfit[i]=1; });
+  HATS.forEach((h,i)=>{ if(!h.prijs) OWNED.hat[i]=1; });
+  EMOTES.forEach(e=>{ if(!e.prijs) OWNED.emote[e.id]=1; });
+  for(let i=0;i<GRATISKLEUR;i++) OWNED.col[i]=1;
+}
+const GRATISKLEUR=6, KLEURPRIJS=40;
+function kleurPrijs(i){ return i<GRATISKLEUR?0:KLEURPRIJS; }
+gratisSpul();
+/* je kunt nooit iets aan hebben wat je niet bezit */
+function kloppendLook(){
+  if(!OWNED.col[LOOK.oc])    LOOK.oc=0;
+  if(!OWNED.outfit[LOOK.ou]) LOOK.ou=0;
+  if(!OWNED.hat[LOOK.ht])    LOOK.ht=0;
+}
+kloppendLook();
+
+function myLook(){ return LOOK; }
+function bewaarWinkel(){
+  LS.set('hub.coins',String(COINS));
+  LS.set('hub.owned',JSON.stringify(OWNED));
+  LS.set('hub.look',JSON.stringify(LOOK));
+  if(typeof commit==='function') commit();
+  if(typeof liveNu==='function') liveNu();
+  tekenSaldo();
+}
+function tekenSaldo(){
+  if(!walletEl) return;
+  walletNum.textContent=COINS;
+}
+function verdien(gameId,v){
+  const maat=MUNTMAAT[gameId]||0.2;
+  const m=Math.max(1,Math.min(60,Math.round(v*maat)));
+  COINS+=m;
+  bewaarWinkel();
+  muntVlaag(m);
+  return m;
+}
+let _muntFx=0, _muntTekst='';
+function muntVlaag(m){
+  _muntTekst='+'+m; _muntFx=2.2;
+  if(!walletEl) return;
+  walletEl.classList.add('pop');
+  setTimeout(()=>walletEl.classList.remove('pop'),650);
+}
+
+/* ---------------- de kraam in de zaal ---------------- */
+function drawShop(c){
+  const cx=P(SHOP_PX);
+  if(!vis(cx,240)) return;
+  const dy=bow(cx), fy=FLOOR_Y+dy, base=706+dy;
+  c.save();
+  // luifel
+  const acc=TH.accent||'#f5a83c';
+  c.fillStyle='rgba(8,10,20,0.55)';
+  c.beginPath(); c.ellipse(cx,base+12,110,16,0,0,6.3); c.fill();
+  c.fillStyle='#3a2a1c';
+  c.fillRect(cx-96,base-150,7,152);
+  c.fillRect(cx+89,base-150,7,152);
+  for(let i=0;i<6;i++){
+    c.fillStyle=(i%2)?acc:schaduw(acc,0.55);
+    c.beginPath();
+    c.moveTo(cx-100+i*34,base-150); c.lineTo(cx-66+i*34,base-150);
+    c.lineTo(cx-66+i*34,base-130); c.quadraticCurveTo(cx-83+i*34,base-120,cx-100+i*34,base-130);
+    c.closePath(); c.fill();
+  }
+  c.fillStyle='#22180f'; c.fillRect(cx-102,base-156,204,8);
+  // toonbank
+  c.fillStyle='#5c4229'; c.fillRect(cx-88,base-54,176,46);
+  c.fillStyle='#74532f'; c.fillRect(cx-92,base-60,184,9);
+  c.fillStyle='#3d2b19';
+  for(let i=0;i<5;i++) c.fillRect(cx-84+i*35,base-50,2,38);
+  // spullen op de plank
+  c.fillStyle='#4a3520'; c.fillRect(cx-70,base-116,140,6);
+  c.fillStyle='#f3c73f';
+  c.beginPath();
+  c.moveTo(cx-56,base-118); c.lineTo(cx-56,base-128); c.lineTo(cx-50,base-122);
+  c.lineTo(cx-45,base-131); c.lineTo(cx-40,base-122); c.lineTo(cx-34,base-128);
+  c.lineTo(cx-34,base-118); c.closePath(); c.fill();
+  c.fillStyle='#9aa3b4';
+  c.beginPath(); c.arc(cx-6,base-120,9,Math.PI,0); c.lineTo(cx+3,base-114);
+  c.lineTo(cx-15,base-114); c.fill();
+  c.fillStyle='#4a6fb5';
+  c.beginPath(); c.moveTo(cx+28,base-114); c.quadraticCurveTo(cx+40,base-134,cx+52,base-114);
+  c.closePath(); c.fill();
+  // munten op de toonbank
+  for(let i=0;i<3;i++){
+    c.fillStyle='#f3c73f';
+    c.beginPath(); c.ellipse(cx+58+i*3,base-62-i*3,7,2.6,0,0,6.3); c.fill();
+  }
+  // bordje
+  c.fillStyle=TH.plaque||'#121a33';
+  rr(c,cx-58,base-186,116,26,6); c.fill();
+  c.strokeStyle=TH.plaqueEdge||'rgba(215,225,255,0.55)'; c.lineWidth=2;
+  rr(c,cx-58,base-186,116,26,6); c.stroke();
+  c.fillStyle=TH.plaqueInk||'#f4f7ff'; c.textAlign='center';
+  c.font='700 14px "Work Sans",system-ui,sans-serif';
+  c.fillText('DE KRAAM',cx,base-168);
+  // de koopvrouw
+  avatar(c,cx-26,base-56,0.82,Math.sin(T*1.1)*0.7,1,'idle',KRAAMLOOK,null);
+  c.restore();
+}
+const KRAAMLOOK=lookFrom('koopvrouw-maud',true);
+
+/* ---------------- het paneel ---------------- */
+const walletEl=document.getElementById('wallet');
+const walletNum=document.getElementById('walletNum');
+const shopEl=document.getElementById('shop');
+const shopTabs=document.getElementById('shopTabs');
+const shopBody=document.getElementById('shopBody');
+const shopCoins=document.getElementById('shopCoins');
+const shopPrev=document.getElementById('shopPrev');
+const emoteBar=document.getElementById('emoteBar');
+let shopTab='col';
+
+function tekenVoorbeeld(){
+  if(!shopPrev) return;
+  const d=Math.min(devicePixelRatio||1,2);
+  shopPrev.width=150*d; shopPrev.height=180*d;
+  const q=shopPrev.getContext('2d');
+  q.setTransform(d,0,0,d,0,0);
+  q.clearRect(0,0,150,180);
+  q.fillStyle='rgba(120,150,220,0.10)';
+  q.beginPath(); q.roundRect?q.roundRect(6,6,138,168,14):q.rect(6,6,138,168); q.fill();
+  avatar(q,75,158,1.25,Math.sin(Date.now()/420)*0.6,1,'idle',LOOK,null);
+}
+function shopRij(label,prijs,bezit,aan,klik,tekenen){
+  const b=document.createElement('button');
+  b.type='button'; b.className='item'+(aan?' aan':'')+(bezit?' bezit':'');
+  const cv2=document.createElement('canvas');
+  cv2.width=76; cv2.height=76; cv2.className='mini';
+  tekenen(cv2.getContext('2d'));
+  b.appendChild(cv2);
+  const n=document.createElement('span'); n.className='nm'; n.textContent=label;
+  b.appendChild(n);
+  const pr=document.createElement('span'); pr.className='pr';
+  pr.textContent=aan?'aan':(bezit?'gekocht':(prijs?prijs+' 🪙':'gratis'));
+  b.appendChild(pr);
+  b.addEventListener('click',klik);
+  shopBody.appendChild(b);
+  return b;
+}
+function koop(soort,sleutel,prijs,zet){
+  const bezit=OWNED[soort][sleutel];
+  if(!bezit){
+    if(COINS<prijs){ showToast('Nog '+(prijs-COINS)+' munten te gaan.'); return; }
+    COINS-=prijs; OWNED[soort][sleutel]=1;
+    showToast('Gekocht!');
+  }
+  zet();
+  bewaarWinkel(); renderShop();
+}
+function renderShop(){
+  if(!shopBody) return;
+  shopCoins.textContent=COINS;
+  [].forEach.call(shopTabs.querySelectorAll('button'),b=>
+    b.classList.toggle('on',b.dataset.t===shopTab));
+  shopBody.textContent='';
+  if(shopTab==='col'){
+    OUTFITCOL.forEach((kl,i)=>{
+      shopRij('Kleur '+(i+1),kleurPrijs(i),OWNED.col[i],LOOK.oc===i,
+        ()=>koop('col',i,kleurPrijs(i),()=>{LOOK.oc=i;}),
+        q=>{ q.fillStyle=kl; q.fillRect(10,10,56,56); q.strokeStyle='rgba(0,0,0,0.35)';
+             q.lineWidth=2; q.strokeRect(10,10,56,56); });
+    });
+  } else if(shopTab==='outfit'){
+    OUTFITS.forEach((o,i)=>{
+      shopRij(o.naam,o.prijs,OWNED.outfit[i],LOOK.ou===i,
+        ()=>koop('outfit',i,o.prijs,()=>{LOOK.ou=i;}),
+        q=>{ const L=Object.assign({},LOOK,{ou:i,ht:0});
+             q.save(); q.translate(0,4); avatar(q,38,68,0.62,0,1,'idle',L,null); q.restore(); });
+    });
+  } else if(shopTab==='hat'){
+    HATS.forEach((h,i)=>{
+      shopRij(h.naam,h.prijs,OWNED.hat[i],LOOK.ht===i,
+        ()=>koop('hat',i,h.prijs,()=>{LOOK.ht=i;}),
+        q=>{ const L=Object.assign({},LOOK,{ht:i});
+             q.save(); q.translate(0,30); q.scale(1.28,1.28); avatar(q,30,54,0.62,0,1,'idle',L,null); q.restore(); });
+    });
+  } else {
+    EMOTES.forEach(e=>{
+      shopRij(e.naam,e.prijs,OWNED.emote[e.id],false,
+        ()=>koop('emote',e.id,e.prijs,()=>{ doeEmote(e.id); }),
+        q=>{ q.font='34px system-ui,sans-serif'; q.textAlign='center';
+             q.fillText(e.glyph,38,50); });
+    });
+  }
+  tekenVoorbeeld(); bouwEmoteBalk();
+}
+if(shopTabs){
+  [].forEach.call(shopTabs.querySelectorAll('button'),b=>
+    b.addEventListener('click',()=>{ shopTab=b.dataset.t; renderShop(); }));
+}
+const shopClose=document.getElementById('shopClose');
+if(shopClose) shopClose.addEventListener('click',()=>{ if(typeof closePanel==='function') closePanel(); });
+if(walletEl) walletEl.addEventListener('click',()=>{
+  if(playing||panel) return;
+  if(typeof openPanel==='function') openPanel('shop');
+});
+
+/* ---------------- emotes ---------------- */
+function doeEmote(id){
+  if(!OWNED.emote[id]) return;
+  MYEMOTE={id:id,t:Date.now()};
+  if(typeof liveNu==='function') liveNu();
+}
+function emoteNu(){
+  if(!MYEMOTE) return null;
+  if(Date.now()-MYEMOTE.t>2400){ MYEMOTE=null; return null; }
+  return MYEMOTE.id;
+}
+function bouwEmoteBalk(){
+  if(!emoteBar) return;
+  emoteBar.textContent='';
+  const mijn=EMOTES.filter(e=>OWNED.emote[e.id]);
+  mijn.forEach(e=>{
+    const b=document.createElement('button');
+    b.type='button'; b.title=e.naam; b.textContent=e.glyph;
+    b.addEventListener('click',ev=>{ ev.preventDefault(); doeEmote(e.id); });
+    emoteBar.appendChild(b);
+  });
+  emoteBar.hidden=mijn.length<1;
+}
+bouwEmoteBalk();
+tekenSaldo();
+
+/* ---------------- wat de server nog van je weet ---------------- */
+let winkelOpgehaald=false;
+function haalWinkelOp(doc){
+  if(winkelOpgehaald||!doc) return;
+  winkelOpgehaald=true;
+  let veranderd=false;
+  if(+doc.coins>COINS){ COINS=Math.round(+doc.coins); veranderd=true; }
+  if(doc.owned&&typeof doc.owned==='object'){
+    ['outfit','hat','col','emote'].forEach(k=>{
+      const v=doc.owned[k]; if(!v||typeof v!=='object') return;
+      for(const sleutel in v){ if(!OWNED[k][sleutel]){ OWNED[k][sleutel]=1; veranderd=true; } }
+    });
+  }
+  if(doc.look&&typeof doc.look==='object'&&!LS.get('hub.look','')){
+    LOOK=doc.look; veranderd=true;
+  }
+  if(veranderd){
+    gratisSpul(); kloppendLook();
+    LS.set('hub.coins',String(COINS));
+    LS.set('hub.owned',JSON.stringify(OWNED));
+    LS.set('hub.look',JSON.stringify(LOOK));
+    tekenSaldo(); bouwEmoteBalk();
+    if(typeof liveNu==='function') liveNu();
+  }
+}
+
+/* =====================================================================
+   SAMEN IN DE ZAAL — waar iedereen loopt, en elkaar oppakken
+   De posities gaan via de Realtime Database van Firebase: die is gemaakt
+   voor veel kleine updates en ruimt zelf op als iemand wegklikt.
+   Zonder verbinding blijft alles gewoon werken, je bent dan alleen.
+===================================================================== */
+const DRAAGTIJD=5000, DRAAGRUST=20000, DRAAGAFSTAND=110;
+let LIVE=null;
+let PEERPOS=Object.create(null);     // id -> {n,x,y,d,g,l,c,cu,e,t, ix,iy,w8}
+let CARRY=null;                      // wie ik draag: {id,tot} of {npc:i,tot}
+let carryVrij=0;                     // vanaf wanneer ik weer mag oppakken
+let _lastSend=0, _lastSig='';
+
+function mijnId(){ return (typeof MYUID!=='undefined'&&MYUID)?MYUID:ME.id; }
+
+function liveState(){
+  return {
+    n:(ME.name||'Speler').slice(0,22),
+    w:THEME_KEY, x:Math.round(p.px), y:Math.round(p.y), d:p.dir,
+    g:playing||null,
+    l:LOOK,
+    c:(CARRY&&CARRY.id)?CARRY.id:null,
+    cu:CARRY?CARRY.tot:0,
+    e:(typeof emoteNu==='function'?emoteNu():null)||null,
+    t:Date.now()
+  };
+}
+function liveTik(){
+  if(!LIVE) return;
+  const st=liveState();
+  const sig=[st.x,st.y,st.d,st.w,st.g,st.c,st.e,st.n,st.l.ou,st.l.ht,st.l.oc,st.l.sk,st.l.ha].join('|');
+  const nu=Date.now();
+  if(sig!==_lastSig||nu-_lastSend>4000){
+    _lastSig=sig; _lastSend=nu;
+    try{ LIVE.mine.set(st); }catch(e){}
+  }
+}
+function liveNu(){ _lastSig=''; liveTik(); }
+
+function zetPeer(id,v){
+  if(!v||id===mijnId()) return;
+  const oud=PEERPOS[id];
+  const pe={ n:clean(v.n,22)||'Speler', w:v.w||'castle',
+             x:+v.x||0, y:+v.y||700, d:(+v.d<0?-1:1),
+             g:v.g||null, l:v.l||lookFrom(id), c:v.c||null, cu:+v.cu||0,
+             e:v.e||null, t:+v.t||0,
+             ix:oud?oud.ix:(+v.x||0), iy:oud?oud.iy:(+v.y||700),
+             loop:oud?oud.loop:0 };
+  PEERPOS[id]=pe;
+}
+function liveInit(){
+  if(typeof rtdbRef!=='function') return false;
+  const root=rtdbRef('hub');
+  if(!root) return false;
+  LIVE={root:root, mine:root.child(mijnId())};
+  try{ LIVE.mine.onDisconnect().remove(); }catch(e){}
+  root.on('child_added',  s=>zetPeer(s.key,s.val()));
+  root.on('child_changed',s=>zetPeer(s.key,s.val()));
+  root.on('child_removed',s=>{ delete PEERPOS[s.key]; });
+  addEventListener('beforeunload',()=>{ try{ LIVE.mine.remove(); }catch(e){} });
+  liveNu();
+  setInterval(liveTik,180);
+  return true;
+}
+
+/* ---------------- wie er in déze zaal loopt ---------------- */
+function liveLijst(){
+  const uit=[], grens=Date.now()-30000;
+  for(const id in PEERPOS){
+    const pe=PEERPOS[id];
+    if(pe.t<grens) continue;
+    if(pe.w!==THEME_KEY) continue;
+    uit.push(Object.assign({id:id},pe));
+  }
+  return uit;
+}
+function naarRonde(nu,doel,f){
+  let d=doel-nu; d=d-Math.round(d/PW)*PW;
+  if(Math.abs(d)>600) return (doel+PW)%PW;        // te ver: gewoon verspringen
+  return (nu+d*f+PW)%PW;
+}
+function liveBeweeg(){
+  for(const id in PEERPOS){
+    const pe=PEERPOS[id];
+    const vorig=pe.ix;
+    pe.ix=naarRonde(pe.ix,pe.x,0.2);
+    pe.iy+=(pe.y-pe.iy)*0.2;
+    let d=pe.x-vorig; d=d-Math.round(d/PW)*PW;
+    if(Math.abs(d)>0.6) pe.loop+=0.22; else pe.loop*=0.86;
+  }
+}
+
+/* ---------------- opgepakt worden ---------------- */
+function draagMij(){                 // wie draagt mij op dit moment?
+  const nu=Date.now();
+  for(const id in PEERPOS){
+    const pe=PEERPOS[id];
+    if(pe.c===mijnId()&&pe.cu>nu&&pe.w===THEME_KEY) return pe;
+  }
+  return null;
+}
+function wordtGedragen(id){          // wordt deze speler door iemand gedragen?
+  const nu=Date.now();
+  if(CARRY&&CARRY.id===id&&CARRY.tot>nu) return {zelf:true};
+  for(const k in PEERPOS){
+    const pe=PEERPOS[k];
+    if(pe.c===id&&pe.cu>nu) return pe;
+  }
+  return null;
+}
+function dragerPlek(pe){             // schouderhoogte van wie draagt
+  const k=depthK(pe.iy);
+  return {x:pe.ix, y:pe.iy, d:pe.d, k:k};
+}
+
+/* ---------------- iemand oppakken ---------------- */
+function draagDoel(){
+  if(CARRY) return null;
+  if(Date.now()<carryVrij) return null;
+  if(draagMij()) return null;
+  let best=null, bestD=DRAAGAFSTAND;
+  liveLijst().forEach(pe=>{
+    if(pe.g) return;                            // die zit in een spel
+    if(wordtGedragen(pe.id)) return;
+    const dx=angDist(p.px,pe.ix), dy=Math.abs(p.y-pe.iy);
+    if(dy>60) return;
+    if(dx<bestD){ bestD=dx; best={soort:'speler',id:pe.id,naam:pe.n}; }
+  });
+  if(best) return best;
+  // niemand online in de buurt: de bewoners van de zaal mogen ook
+  for(let i=0;i<NPCS.length;i++){
+    const n=NPCS[i];
+    if(n.weg) continue;
+    const dx=angDist(p.px,n.px), dy=Math.abs(p.y-n.y);
+    if(dy>60||dx>=bestD) continue;
+    bestD=dx; best={soort:'npc',i:i,naam:'een bezoeker'};
+  }
+  return best;
+}
+function pakOp(){
+  const d=draagDoel();
+  if(!d){
+    if(CARRY) return;
+    if(Date.now()<carryVrij) showToast('Nog even wachten voor je weer iemand optilt.');
+    else showToast('Ga dichter bij iemand staan om hem op te tillen.');
+    return;
+  }
+  CARRY = d.soort==='speler' ? {id:d.id,tot:Date.now()+DRAAGTIJD}
+                             : {npc:d.i,tot:Date.now()+DRAAGTIJD};
+  if(d.soort==='npc') NPCS[d.i].weg=true;
+  liveNu();
+  showToast('Je tilt '+d.naam+' op — vijf seconden.');
+}
+function draagTik(){
+  if(CARRY&&Date.now()>CARRY.tot){
+    if(CARRY.npc!=null&&NPCS[CARRY.npc]){
+      const n=NPCS[CARRY.npc];
+      n.weg=false; n.px=p.px; n.y=p.y;            // hij komt neer waar jij staat
+    }
+    CARRY=null; carryVrij=Date.now()+DRAAGRUST;
+    liveNu();
+  }
+}
+function draagRest(){                 // hoeveel seconden nog te wachten
+  const over=carryVrij-Date.now();
+  return over>0?Math.ceil(over/1000):0;
+}
+
+/* ---------------- tekenen ---------------- */
+function emotePose(id){
+  return (id==='zwaai'||id==='juich'||id==='buig'||id==='dans'||id==='wijs'||id==='lach')?id:null;
+}
+function emoteGlyph(id){
+  const e=EMOTES.filter(x=>x.id===id)[0];
+  return e?e.glyph:null;
+}
+function tekenEmote(c,x,y,k,id){
+  const gl=emoteGlyph(id); if(!gl) return;
+  c.save();
+  c.font=(20*k).toFixed(0)+'px system-ui,"Apple Color Emoji","Segoe UI Emoji",sans-serif';
+  c.textAlign='center';
+  c.fillStyle='rgba(8,10,20,0.72)';
+  const w=26*k;
+  rr(c,x-w/2,y-96*k,w,w,6*k); c.fill();
+  c.fillText(gl,x,y-96*k+20*k);
+  c.restore();
+}
+function naamPlaat(c,x,y,k,naam,kleur){
+  c.textAlign='center';
+  c.font='700 '+(11.5*k).toFixed(1)+'px "Work Sans",system-ui,sans-serif';
+  const w=c.measureText(naam).width+14*k;
+  c.fillStyle='rgba(8,10,20,0.6)';
+  rr(c,x-w/2,y-84*k,w,16*k,5*k); c.fill();
+  c.fillStyle=kleur;
+  c.fillText(naam,x,y-84*k+11.5*k);
+}
+
+function tekenOpSchouder(c,x,y,k,dir,car){
+  const ox=x-dir*5*k, oy=y-50*k;
+  c.save();
+  c.translate(ox,oy); c.rotate(dir*0.26); c.translate(-ox,-oy);   // scheef over de schouder
+  if(car.npc!=null&&NPCS[car.npc]){
+    avatar(c,ox,oy,k*0.9,0,-dir,'held',NPCS[car.npc].look,null);
+  } else if(car.id&&PEERPOS[car.id]){
+    const pe=PEERPOS[car.id];
+    avatar(c,ox,oy,k*0.9,0,-dir,'held',pe.l,null);
+    naamPlaat(c,ox,oy,k*0.86,pe.n,'#cfe0ff');
+  }
+  c.restore();
+}
+function tekenSpeler(c,x,y){
+  const k=depthK(p.y);
+  const em=(typeof emoteNu==='function')?emoteNu():null;
+  const gedragen=draagMij();
+  const pose=gedragen?'held':(CARRY?'carry':(emotePose(em)||'idle'));
+  avatar(c,x,y,k,p.walk,p.dir,pose,LOOK,'rgba(255,200,115,0.9)');
+  naamPlaat(c,x,y,k,'JIJ','#ffd68c');
+  if(em) tekenEmote(c,x,y,k,em);
+  if(CARRY) tekenOpSchouder(c,x,y,k,p.dir,CARRY);
+}
+function tekenPeer(c,pe,x,y){
+  const k=depthK(pe.iy);
+  const nu=Date.now();
+  c.save();
+  if(pe.g) c.globalAlpha=0.4;
+  const pose=pe.c&&pe.cu>nu?'carry':(emotePose(pe.e)||'idle');
+  avatar(c,x,y,k,pe.loop,pe.d,pose,pe.l,'rgba(150,200,255,0.6)');
+  naamPlaat(c,x,y,k,pe.n+(pe.g?' · speelt':''),'#cfe0ff');
+  if(pe.e&&!pe.g) tekenEmote(c,x,y,k,pe.e);
+  c.restore();
+  if(pe.c&&pe.cu>nu){
+    const ox=x-pe.d*5*k, oy=y-50*k;
+    c.save(); c.translate(ox,oy); c.rotate(pe.d*0.26); c.translate(-ox,-oy);
+    if(pe.c===mijnId()) avatar(c,ox,oy,k*0.9,0,-pe.d,'held',LOOK,'rgba(255,200,115,0.9)');
+    else if(PEERPOS[pe.c]) avatar(c,ox,oy,k*0.9,0,-pe.d,'held',PEERPOS[pe.c].l,null);
+    c.restore();
+  }
+}
+function tekenNPC(c,n,x,y){
+  const k=depthK(n.y), idle=Math.sin(T*1.6+n.ph)*0.9;
+  if(n.jump) avatar(c,x,y-Math.abs(Math.sin(T*2.3+n.ph))*30,k,T*6,n.dir,'idle',n.look,null);
+  else if(n.run) avatar(c,x+Math.sin(T*1.0+n.ph)*34,y,k,T*9,n.dir,'run',n.look,null);
+  else avatar(c,x,y,k,idle,n.dir,n.pose||'idle',n.look,null);
 }
 
 function figure(c,x,y,k,walk,dir,pose,rim){
@@ -3991,10 +4997,14 @@ function effR(){ return keys.ArrowRight||keys.d||keys.D||keys.tR; }
 function effU(){ return keys.ArrowUp||keys.w||keys.W||keys.tU; }
 function effD(){ return keys.ArrowDown||keys.s||keys.S||keys.tD; }
 function updatePlayer(){
+  const gedragen=draagMij();
+  if(gedragen){ p.px=gedragen.ix; p.y=gedragen.iy; p.dir=-gedragen.d; p.walk=0; }
   const depth=(p.y-FLOOR_Y)/(FLOOR_B-FLOOR_Y);
   let mx=0,my=0;
-  if(effL())mx-=1; if(effR())mx+=1;
-  if(effU())my-=1; if(effD())my+=1;
+  if(!gedragen){
+    if(effL())mx-=1; if(effR())mx+=1;
+    if(effU())my-=1; if(effD())my+=1;
+  }
   if(mx||my){
     const n=Math.hypot(mx,my)||1;
     p.px=(p.px+mx/n*(4.2+5.4*depth)+PW)%PW;
@@ -4095,6 +5105,7 @@ addEventListener('keydown',e=>{
   if(panel){ if(e.key==='Escape'){ closePanel(); e.preventDefault(); } return; }
   keys[e.key]=true; dismissIntro();
   if(e.key>='1'&&e.key<='4'){ setTheme(THEME_ORDER[+e.key-1]); presenceUpdate(); e.preventDefault(); return; }
+  if(e.key==='e'||e.key==='E'){ pakOp(); e.preventDefault(); return; }
   if(e.key==='Enter'||e.key===' '){ pressAction(); e.preventDefault(); }
   else if(e.key.indexOf('Arrow')===0) e.preventDefault();
 });
@@ -4135,26 +5146,26 @@ function drawRings(c){
   });
 }
 function drawActors(c){
+  liveBeweeg();
   const list=[];
-  NPCS.forEach(n=>{ const x=P(n.px); if(vis(x,80)) list.push({x,n,y:n.y}); });
+  NPCS.forEach((n,i)=>{
+    if(n.weg) return;
+    if(!n.look) n.look=lookFrom('bezoeker'+i,true);
+    const x=P(n.px); if(vis(x,90)) list.push({x,n,y:n.y});
+  });
   HOODED.forEach(hd=>{ const x=P(hd.px); if(vis(x,80)) list.push({x,hood:true,y:hd.y}); });
-  list.push({x:P(p.px),player:true,y:p.y});
+  liveLijst().forEach(pe=>{
+    if(wordtGedragen(pe.id)) return;      // die staat op de schouder van wie hem draagt
+    const x=P(pe.ix); if(vis(x,90)) list.push({x,peer:pe,y:pe.iy});
+  });
+  if(!draagMij()) list.push({x:P(p.px),player:true,y:p.y});
   list.sort((a,b)=>a.y-b.y);
   list.forEach(it=>{
     const dy=bow(it.x);
-    if(it.player){
-      const k=depthK(p.y);
-      figure(c,it.x,p.y+dy,k,p.walk,p.dir,'idle','rgba(255,200,115,0.9)');
-      c.textAlign='center'; c.fillStyle='rgba(255,214,140,0.95)';
-      c.font='700 '+(12*k).toFixed(1)+'px "Work Sans",system-ui,sans-serif';
-      c.fillText('JIJ',it.x,p.y+dy-80*k);
-      return;
-    }
+    if(it.player){ tekenSpeler(c,it.x,p.y+dy); return; }
     if(it.hood){ hooded(c,it.x,it.y+dy,depthK(it.y)); return; }
-    const n=it.n, k=depthK(n.y), idle=Math.sin(T*1.6+n.ph)*0.9;
-    if(n.jump) figure(c,it.x,n.y+dy-Math.abs(Math.sin(T*2.3+n.ph))*30,k,T*6,n.dir,'idle');
-    else if(n.run) figure(c,it.x+Math.sin(T*1.0+n.ph)*34,n.y+dy,k,T*9,n.dir,'run');
-    else figure(c,it.x,n.y+dy,k,idle,n.dir,n.pose||'idle');
+    if(it.peer){ tekenPeer(c,it.peer,it.x,it.peer.iy+dy); return; }
+    tekenNPC(c,it.n,it.x,it.n.y+dy);
   });
 }
 function drawCompass(c){
@@ -4205,6 +5216,7 @@ function drawVignette(c){ if(_vign) c.drawImage(_vign,0,0,W,8,0,0,W,HH); }
 
 /* ---------------- frame ---------------- */
 function frame(){
+  draagTik();
   if(playing||panel){ requestAnimationFrame(frame); return; }
   T+=1/60;
   updatePlayer();
@@ -4220,6 +5232,7 @@ function frame(){
   syncEnter();
   SCREENS.forEach(S=>drawScreen(g,S,T));
   TH.props(g);
+  drawShop(g);
   TH.fire(g);
   drawRings(g);
   drawActors(g);
@@ -4234,6 +5247,8 @@ function frame(){
   requestAnimationFrame(frame);
 }
 /* starten gebeurt onderaan W7, als alles gedefinieerd is */
+
+function figure(c,x,y,k,walk,dir,pose,rim){ avatar(c,x,y,k,walk,dir,pose,lookFrom('gast'),rim); }
 
 
 /* =====================================================================
@@ -4284,13 +5299,35 @@ const chatSend=document.getElementById('chatSend'), chatTo=document.getElementBy
 const chatToName=document.getElementById('chatToName'), chatToClear=document.getElementById('chatToClear');
 const netBadge=document.getElementById('netBadge');
 const nameInput=document.getElementById('nameInput');
+const grabEl=document.getElementById('grab'), grabWie=document.getElementById('grabWie');
+if(grabEl) grabEl.addEventListener('click',e=>{ e.preventDefault(); dismissIntro(); pakOp(); });
 
 let enterFor=null, hofPeriod='day', hofGame='all', talkTo=null, playMode='play';
 let touchUI=false;
 try{ touchUI=matchMedia('(pointer:coarse)').matches||innerWidth<820; }catch(e){}
 
 /* ---------------- spelen of meekijken ---------------- */
+function grabSync(){
+  if(!grabEl) return;
+  if(playing||panel||!introGone){ grabEl.hidden=true; return; }
+  if(CARRY){ grabEl.hidden=true; return; }
+  const d=draagDoel();
+  if(!d){
+    const rest=draagRest();
+    if(rest>0&&!enterFor){
+      grabEl.hidden=false; grabEl.disabled=true;
+      grabEl.querySelector('b').textContent='Nog '+rest+'s';
+      grabWie.textContent='even wachten';
+      return;
+    }
+    grabEl.hidden=true; return;
+  }
+  grabEl.hidden=false; grabEl.disabled=false;
+  grabEl.querySelector('b').textContent='Optillen';
+  grabWie.textContent=d.naam;
+}
 function hubSync(){
+  grabSync();
   const s=(introGone&&!playing&&!panel)?nearStation():null;
   if(s&&s.status==='live'){
     if(enterFor!==s.id){
@@ -4334,6 +5371,8 @@ function openGame(s,mode){
     : (C.tip||'');
   buildGamePad(s.id);
   enterWrap.hidden=true; barEl.hidden=true; padEl.hidden=true;
+  grabEl.hidden=true; if(emoteBar) emoteBar.hidden=true;
+  if(walletEl) walletEl.hidden=true;
   frameEl.srcdoc=html;
   playEl.hidden=false;
   frameEl.onload=()=>{
@@ -4353,6 +5392,8 @@ function closeGame(){
     playing=null;
     playEl.hidden=true; barEl.hidden=false;
     padEl.hidden=!touchUI;
+    if(walletEl) walletEl.hidden=false;
+    bouwEmoteBalk();
     frameEl.onload=null; frameEl.srcdoc='';
     for(const k in keys) keys[k]=false;
     try{ window.focus(); }catch(e){}
@@ -4390,13 +5431,14 @@ function keyBtn(parent,label,key,cls){
 function buildGamePad(gid){
   const C=CONTROLS[gid]||{};
   gpadEl.textContent='';
+  gpadEl.dataset.dirs=(C.u||C.d)?'4':'2';
   const nav=document.createElement('div'); nav.className='nav';
   const mid=document.createElement('div'); mid.className='mid';
-  if(C.u) keyBtn(nav,'▲',C.u,'up'); else nav.appendChild(document.createElement('span'));
+  if(C.u) keyBtn(nav,'▲',C.u,'up');
   keyBtn(mid,'◀',C.l||'ArrowLeft','l');
   keyBtn(mid,'▶',C.r||'ArrowRight','r');
   nav.appendChild(mid);
-  if(C.d) keyBtn(nav,'▼',C.d,'dn'); else nav.appendChild(document.createElement('span'));
+  if(C.d) keyBtn(nav,'▼',C.d,'dn');
   gpadEl.appendChild(nav);
   const act=document.createElement('div'); act.className='act';
   if(C.b) keyBtn(act,C.b.t,C.b.k,'b');
@@ -4438,13 +5480,16 @@ function syncNetBadge(){
 function openPanel(which){
   panel=which;
   if(which==='hof'){ renderHof(); hofEl.hidden=false; }
+  else if(which==='shop'){ renderShop(); shopEl.hidden=false; }
   else { renderChat(); chatEl.hidden=false; setTimeout(()=>{try{chatInput.focus();}catch(e){}},60); }
   enterWrap.hidden=true; barEl.hidden=true; padEl.hidden=true;
+  grabEl.hidden=true; if(emoteBar) emoteBar.hidden=true;
   for(const k in keys) keys[k]=false;
 }
 function closePanel(){
-  panel=null; hofEl.hidden=true; chatEl.hidden=true; barEl.hidden=false;
+  panel=null; hofEl.hidden=true; chatEl.hidden=true; shopEl.hidden=true; barEl.hidden=false;
   padEl.hidden=!touchUI;
+  bouwEmoteBalk();
   for(const k in keys) keys[k]=false;
   try{ window.focus(); }catch(e){}
 }
@@ -4633,6 +5678,7 @@ setTimeout(netInit,0);
 const FIREBASE_CONFIG=(typeof window!=='undefined' && window.HUB_FIREBASE) || {
   apiKey:            "",
   authDomain:        "",
+  databaseURL:       "",
   projectId:         "",
   storageBucket:     "",
   messagingSenderId: "",
@@ -4648,7 +5694,14 @@ function loadScript(src){
     document.head.appendChild(s);
   });
 }
-let FS=null, MYUID=null, presTimer=null;
+let FS=null, RTDB=null, MYUID=null, presTimer=null;
+
+/* de Realtime Database: hier staan de posities, want die veranderen tien keer
+   per seconde. Hij ruimt zichzelf op zodra iemand zijn tabblad sluit. */
+function rtdbRef(pad){
+  if(!RTDB) return null;
+  try{ return RTDB.ref(pad); }catch(e){ return null; }
+}
 
 async function onlineDB(){
   if(!FIREBASE_CONFIG.projectId) return null;           // niet ingevuld: offline
@@ -4665,6 +5718,14 @@ async function onlineDB(){
     PLAYERS[ME.id]=MINE;
     startPresence();
     NETLABEL='live — gedeeld met iedereen online';
+    // posities: alleen als er een databaseURL is ingevuld
+    if(FIREBASE_CONFIG.databaseURL){
+      try{
+        await loadScript(SDK+'firebase-database-compat.js');
+        RTDB=firebase.database();
+        if(typeof liveInit==='function') liveInit();
+      }catch(e){ RTDB=null; }
+    }
     return { db:{ collection:p=>FS.collection(p), doc:p=>FS.doc(p) }, room:null };
   }catch(e){
     NETLABEL='geen verbinding met de server — alleen op dit apparaat';
