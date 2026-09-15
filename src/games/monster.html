@@ -1,0 +1,859 @@
+<title>De Hal</title>
+<style>
+  :root{ --paper:#F1F0EC; --ink:#15150F; --signal:#E03A25; --grijs:#6E6E64; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--paper);color:var(--ink);
+    font-family:system-ui,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+    gap:14px;padding:12px 16px 16px;overflow:hidden;
+  }
+  .bord{ width:min(100%,1040px); background:#fff; border:1.5px solid var(--ink); }
+  .bord .kop{
+    background:var(--ink);color:var(--paper);
+    display:flex;justify-content:space-between;align-items:center;padding:6px 10px;
+    font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+  }
+  .bord .kop span:last-child{font-size:9px;font-weight:400}
+  .rij{ display:grid;grid-template-columns:18px 1fr auto;gap:8px;padding:3px 10px;font-size:11px; }
+  .rij .plek{color:var(--grijs)}
+  .rij.leeg{color:var(--grijs)}
+  canvas{display:block;width:min(100%,1040px);height:auto;background:var(--paper);touch-action:none;cursor:crosshair}
+  .balk{
+    width:min(100%,1040px);display:flex;gap:6px;align-items:center;flex-wrap:wrap;
+    font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--grijs);
+  }
+  kbd{ font:inherit;font-size:11px;border:1px solid #C9C8C1;border-radius:3px;
+       padding:2px 6px;color:var(--ink);background:#fff; }
+</style>
+<style>
+:root{padding:0 !important;color-scheme:light}
+html,body{height:100%;margin:0}
+body{background:#F1F0EC !important;font-size:14px}
+</style>
+<section class="bord">
+  <div class="kop"><span>Wereldrecords</span><span>LANGSTE OVERLEVING</span></div>
+  <div id="lijst"></div>
+</section>
+
+<canvas id="c" width="960" height="540" tabindex="0" aria-label="De hal"></canvas>
+
+<div class="balk">
+  <kbd>A</kbd><kbd>D</kbd> lopen &nbsp; <kbd>enter</kbd> knop pakken &nbsp; <kbd>klik</kbd> mikken &nbsp; <kbd>spatie</kbd> springen / slaan &nbsp; <kbd>esc</kbd> loslaten &nbsp; <kbd>M</kbd> geluid
+</div>
+
+<script>
+(() => {
+"use strict";
+
+const PAPER='#F1F0EC', INK='#15150F', SIGNAL='#E03A25', GREY='#B9B8B1', SOFT='#DEDDD7';
+const FONT = "system-ui,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+const S_LUCHT='#2A2A23', S_VER='#39392F', S_DICHT='#46463A', S_VLOER='#33332B',
+      S_LIJN='#43433A', S_REUS='#1B1B15', S_MONSTER='#EDECE6';
+
+/* ---------- scorebord ---------- */
+const PLEKKEN = 5;
+let scores = [];
+function toonScores(){
+  const lijst = document.getElementById('lijst');
+  lijst.innerHTML = '';
+  for(let i=0;i<PLEKKEN;i++){
+    const s = scores[i];
+    const rij = document.createElement('div');
+    rij.className = 'rij' + (s ? '' : ' leeg');
+    rij.innerHTML = '<span class="plek">'+(i+1)+'</span>'+
+                    '<span>'+(s ? s.naam : '—')+'</span>'+
+                    '<span>'+(s ? s.score+' s' : '—')+'</span>';
+    lijst.appendChild(rij);
+  }
+}
+function nieuweScore(naam, score){
+  scores.push({naam, score});
+  scores.sort((a,b)=>b.score-a.score);
+  scores = scores.slice(0,PLEKKEN);
+  toonScores();
+}
+
+/* ---------- canvas ---------- */
+const cv = document.getElementById('c'), ctx = cv.getContext('2d', {alpha:false});
+const W = 960, H = 540, GROUND = 470;
+let t = 0;
+function fit(){
+  const dpr = Math.min(devicePixelRatio||1, 2), cssW = cv.clientWidth||W;
+  cv.width = Math.round(cssW*dpr); cv.height = Math.round(cssW*(H/W)*dpr);
+  ctx.setTransform(cv.width/W,0,0,cv.width/W,0,0);
+  ctx.lineJoin='round'; ctx.lineCap='round';
+}
+addEventListener('resize', fit);
+function rr(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+function txt(s,x,y,size,weight,align,color){
+  ctx.fillStyle = color; ctx.textAlign = align;
+  ctx.font = weight+' '+size+'px '+FONT; ctx.fillText(s,x,y);
+}
+
+/* ---------- geluid: relaxte hub met actie ---------- */
+let ac=null, master=null, muziekAan=true, stapNr=0;
+const halve = n => 55 * Math.pow(2, n/12);
+const BAS  = [0,null,null,null, 7,null,null,3, 5,null,null,null, 3,null,0,null];
+const AKK  = [[12,15,19],[10,14,17],[8,12,15],[10,14,19]];
+const MEL  = [null,null,24,null, 27,null,null,26, null,24,null,null, 22,null,null,null,
+              null,null,19,null, 22,null,24,null, null,null,26,null, 24,null,22,null];
+function startMuziek(){
+  if(ac) return;
+  try{ ac = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return; }
+  master = ac.createGain(); master.gain.value = muziekAan ? .45 : 0; master.connect(ac.destination);
+  const drone = ac.createOscillator(); drone.type='triangle'; drone.frequency.value=55;
+  const dg = ac.createGain(); dg.gain.value=.05; drone.connect(dg); dg.connect(master); drone.start();
+  setInterval(beat, 150);
+}
+function noot(freq, dur, vol, type, glijd){
+  if(!ac || !master) return;
+  const nu = ac.currentTime;
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = type || 'triangle';
+  o.frequency.setValueAtTime(freq, nu);
+  if(glijd) o.frequency.exponentialRampToValueAtTime(Math.max(20, freq*glijd), nu+dur);
+  g.gain.setValueAtTime(0, nu);
+  g.gain.linearRampToValueAtTime(vol, nu+.012);
+  g.gain.exponentialRampToValueAtTime(.0001, nu+dur);
+  o.connect(g); g.connect(master); o.start(nu); o.stop(nu+dur+.05);
+}
+function beat(){
+  if(!ac) return;
+  const s = stapNr % 16, m = stapNr % 32, blok = ((stapNr/16)|0) % 4;
+  if(s===0 || s===8) noot(74, .26, .38, 'sine', .35);        // zachte dreun
+  if(s===4 || s===12) noot(1800, .05, .05, 'square', .6);    // tik
+  if(s%4===2) noot(6400, .02, .022, 'square');               // hat
+  const b = BAS[s];
+  if(b !== null) noot(halve(b), .34, .17, 'triangle');
+  if(s===0){                                                  // akkoord onder alles
+    for(const n of AKK[blok]) noot(halve(n), 1.7, .045, 'triangle');
+  }
+  const mel = MEL[m];
+  if(mel !== null) noot(halve(mel), .42, .085, 'square');
+  stapNr++;
+}
+addEventListener('keydown', e=>{
+  if(e.key.toLowerCase()==='m'){ muziekAan = !muziekAan; if(master) master.gain.value = muziekAan ? .45 : 0; }
+});
+
+/* ---------- toetsen en muis ---------- */
+const key = Object.create(null), edge = Object.create(null);
+addEventListener('keydown', e=>{
+  const k = e.key.toLowerCase();
+  if(['a','d','w','s','arrowleft','arrowright','arrowup','arrowdown',' ','enter','escape'].includes(k)) e.preventDefault();
+  if(!key[k]) edge[k] = true;
+  key[k] = true; startMuziek();
+});
+addEventListener('keyup', e=>{ key[e.key.toLowerCase()] = false; });
+addEventListener('blur', ()=>{ for(const p in key) key[p] = false; });
+function tik(k){ if(edge[k]){ edge[k]=false; return true; } return false; }
+
+let muis = {x:0, y:0, klik:false};
+cv.addEventListener('pointermove', e=>{
+  const r = cv.getBoundingClientRect();
+  muis.x = (e.clientX - r.left)/r.width*W;
+  muis.y = (e.clientY - r.top)/r.height*H;
+});
+cv.addEventListener('pointerdown', e=>{ muis.klik = true; cv.focus(); startMuziek(); e.preventDefault(); });
+
+/* ---------- inrichting ---------- */
+const KAST = {x:180, y:14, w:600};
+const SCH  = {x:KAST.x+22, y:KAST.y+22, w:KAST.w-44, h:300};
+const CONS = {x:KAST.x-14, y:GROUND-52, w:KAST.w+28, h:62};
+const knopX = [0,1,2,3].map(i => CONS.x + CONS.w*(i+1)/5);
+const KNOP_Y = GROUND - 22;
+const KNOP_NAAM = ['MONSTER','BLIKSEM','REUS','SCHIETEN'];
+const ACTIE_COOL = [3, 10, 5, .5];   // seconden tussen twee acties
+const BEURT = 30, KNOP_NA = 30, EIGEN_NA = 60;
+const knopCool = [0,0,0,0];
+const knopEigenaar = [null,null,null,null];
+const DEUR = [{x:96}, {x:864}];
+
+/* ---------- het spel ---------- */
+const GW = SCH.w, GH = SCH.h;
+const VELD = {x0:26, x1:GW-26, y0:150, y1:GH-24};
+const MS = .6;                    // de kleine monsters zijn 60% van hun oude maat
+const spel = { monsters:[], worpen:[], bliksem:null, reus:null, raakflits:0 };
+
+function nieuwMonster(x, y){
+  return {
+    x: x !== undefined ? x : VELD.x0 + Math.random()*(VELD.x1-VELD.x0),
+    y: y !== undefined ? y : VELD.y0 + Math.random()*(VELD.y1-VELD.y0),
+    hp:3, wob:Math.random()*7, dood:0, snel:.9 + Math.random()*.35,
+    jaagt:null, kies:0, hoek:Math.random()*Math.PI*2
+  };
+}
+for(let i=0;i<5;i++) spel.monsters.push(nieuwMonster());
+
+/* ---------- figuren ---------- */
+function maakFiguur(naam, x, isJij){
+  return {naam, x, isJij, face:1, walk:0, loopt:false, staat:'hub',
+          aftellen:0, doel:x, pauze:Math.random()*2, snelheid:58+Math.random()*26,
+          knop:null, beurt:0, actieCool:0, knopDoel:null, mik:{x:GW/2,y:GH/2},
+          pcool:[0,0,0,0], g:null};
+}
+const jij = maakFiguur('JIJ', 60, true);
+const ai = ['ASTRID','LEV','JUNO','DAAN'].map((n,i)=>maakFiguur(n, 300+i*130, false));
+const allen = [jij].concat(ai);
+const levend = () => allen.filter(f => f.staat === 'spel' && f.g);
+
+function dichtstbij(p, lijst){
+  let best=null, bd=1e9;
+  for(const q of lijst){
+    if(!q || q.dood > 0) continue;
+    const d = Math.hypot(q.x-p.x, q.y-p.y);
+    if(d < bd){ bd = d; best = q; }
+  }
+  return best;
+}
+
+function naarSpel(f){
+  let px=0, py=0, ver=-1;
+  for(let i=0;i<24;i++){
+    const x = VELD.x0 + Math.random()*(VELD.x1-VELD.x0);
+    const y = VELD.y0 + Math.random()*(VELD.y1-VELD.y0);
+    const m = dichtstbij({x,y}, spel.monsters);
+    const d = m ? Math.hypot(m.x-x, m.y-y) : 999;
+    if(d > ver){ ver=d; px=x; py=y; }
+    if(ver > 120) break;
+  }
+  laatKnopLos(f);
+  f.staat = 'spel';
+  f.g = {x:px, y:py, z:0, vz:0, face:1, walk:0, tijd:0, doel:null, denk:0};
+  noot(180, .4, .18, 'triangle', 3);
+}
+function uitSpel(f){
+  nieuweScore(f.naam, Math.round(f.g.tijd));
+  f.g = null; f.staat = 'hub';
+  f.x = (Math.random()<.5 ? DEUR[0].x : DEUR[1].x) - 13;
+  f.doel = f.x; f.pauze = 1.2; f.aftellen = 0;
+  noot(90, .5, .3, 'sawtooth', .3);
+}
+
+/* ---------- knoppen ---------- */
+function kanPakken(f, i){
+  return knopEigenaar[i] === null && knopCool[i] <= 0 && f.pcool[i] <= 0;
+}
+function pakKnop(f, i){
+  laatKnopLos(f);
+  f.knop = i; f.beurt = BEURT; f.actieCool = 0;
+  knopEigenaar[i] = f;
+  if(i === 2) spel.reus = {x:-120, bestuurder:f, slag:null, weg:false};
+  noot(440, .12, .12, 'square');
+}
+function laatKnopLos(f){
+  const i = f.knop;
+  if(i === null) return;
+  knopEigenaar[i] = null;
+  knopCool[i] = KNOP_NA;
+  f.pcool[i] = EIGEN_NA;
+  if(i === 2 && spel.reus && spel.reus.bestuurder === f) spel.reus.weg = true;
+  f.knop = null; f.beurt = 0;
+}
+function doeActie(f, gx, gy){
+  const i = f.knop;
+  if(i === null || f.actieCool > 0) return;
+  if(i === 0){                                   // het monster uit je handen het scherm in
+    spel.worpen.push({
+      x0: f.x + 13 + f.face*16, y0: GROUND - 38,
+      x1: SCH.x + gx, y1: SCH.y + gy,
+      gx, gy, t:0, duur:.8
+    });
+    noot(260, .18, .14, 'sawtooth', 1.6);
+  }
+  if(i === 1){                                   // bliksem: slaat een halve seconde later in
+    spel.bliksem = {x:gx, y:gy, wacht:.5, tijd:.45};
+    noot(300, .3, .1, 'triangle', 2.4);
+  }
+  if(i === 2){                                   // reus slaat
+    const r = spel.reus; if(!r) return;
+    const doel = dichtstbij({x:r.x, y:(VELD.y0+VELD.y1)/2}, levend().map(s=>s.g));
+    r.slag = {x: Math.max(VELD.x0, Math.min(VELD.x1, r.x)),
+              y: doel ? doel.y : (VELD.y0+VELD.y1)/2, timer:.75, klap:0};
+    noot(120, .3, .3, 'sawtooth', .5);
+  }
+  if(i === 3) schietOp(gx, gy);                  // schieten
+  f.actieCool = ACTIE_COOL[i];
+}
+function schietOp(gx, gy){
+  noot(900, .06, .1, 'square', .3);
+  for(const m of spel.monsters){
+    if(m.dood > 0) continue;
+    if(Math.hypot(m.x-gx, m.y-gy) < 17){
+      m.hp--; spel.raakflits = .18;
+      if(m.hp <= 0){ m.dood = 6; noot(140, .35, .2, 'sawtooth', .4); }
+      return;
+    }
+  }
+}
+
+/* ---------- jij in de hal ---------- */
+function stapJij(dt){
+  if(jij.staat === 'spel') return;
+
+  const stuurtReus = jij.knop === 2;
+  const L = key['a']||key['arrowleft'], R = key['d']||key['arrowright'];
+  const richting = (R?1:0) - (L?1:0);
+
+  if(stuurtReus){
+    jij.loopt = false;
+    if(spel.reus) spel.reus.x = Math.max(-40, Math.min(GW+40, spel.reus.x + richting*130*dt));
+    if(tik(' ')) doeActie(jij, 0, 0);
+  } else {
+    jij.loopt = richting !== 0;
+    if(richting){
+      jij.face = richting;
+      jij.x = Math.max(20, Math.min(W-46, jij.x + richting*170*dt));
+      jij.walk += 170*dt*.05;
+    }
+  }
+
+  const dichtbij = knopX.findIndex(kx => Math.abs(jij.x+13-kx) < 42);
+  if(tik('enter') && dichtbij >= 0 && kanPakken(jij, dichtbij)) pakKnop(jij, dichtbij);
+  if(tik('escape')) laatKnopLos(jij);
+  if(jij.knop !== null && jij.knop !== 0 && !stuurtReus && Math.abs(jij.x+13-knopX[jij.knop]) > 60) laatKnopLos(jij);
+
+  // mikken en klikken in het scherm
+  if(jij.knop !== null && jij.knop !== 2 && muis.klik){
+    const gx = muis.x - SCH.x, gy = muis.y - SCH.y;
+    if(gx > 0 && gx < GW && gy > 0 && gy < GH) doeActie(jij, gx, gy);
+  }
+
+  // de deur staat altijd open
+  const p = DEUR.find(p => Math.abs(jij.x+13 - p.x) < 30);
+  if(p){
+    jij.aftellen = jij.aftellen > 0 ? jij.aftellen - dt : 3;
+    if(jij.aftellen <= 0){ jij.aftellen = 0; naarSpel(jij); }
+  } else jij.aftellen = 0;
+}
+
+/* ---------- a.i. in de hal ---------- */
+function kiesDoel(a){
+  const r = Math.random();
+  if(r < .45){ a.knopDoel = null; a.doel = DEUR[(Math.random()<.5?0:1)].x - 13; return; }
+  const vrij = [0,1,2,3].filter(i => kanPakken(a, i));
+  if(vrij.length && r < .92){
+    a.knopDoel = vrij[(Math.random()*vrij.length)|0];
+    a.doel = knopX[a.knopDoel] - 13;
+    return;
+  }
+  a.knopDoel = null;
+  a.doel = 40 + Math.random()*(W-120);
+}
+function aiKnop(a, dt){
+  a.beurt -= dt;
+  if(a.beurt <= 0){ laatKnopLos(a); a.pauze = .5 + Math.random()*2; return; }
+  if(a.knop === 0){                                  // loopt rond met zijn monster
+    if(Math.abs(a.doel - a.x) < 6) a.doel = 40 + Math.random()*(W-120);
+    const d = a.doel - a.x;
+    a.face = d > 0 ? 1 : -1;
+    a.x += a.face * a.snelheid * .7 * dt;
+    a.walk += a.snelheid * dt * .04;
+    a.loopt = true;
+  }
+  if(a.actieCool > 0) return;
+
+  const spelers = levend();
+  if(a.knop === 2){
+    const r = spel.reus; if(!r) return;
+    const doel = spelers.length ? spelers[0].g : null;
+    const wil = doel ? doel.x : GW/2 + Math.sin(t*.5)*160;
+    r.x += Math.sign(wil - r.x) * 110 * dt;
+    if(doel && Math.abs(r.x - doel.x) < 60 && Math.random() < .05) doeActie(a, 0, 0);
+    else if(Math.random() < .004) doeActie(a, 0, 0);
+    return;
+  }
+  if(Math.random() > .04) return;                    // niet meteen raak
+  let gx, gy;
+  if(a.knop === 0){
+    gx = VELD.x0 + Math.random()*(VELD.x1-VELD.x0);
+    gy = VELD.y0 + Math.random()*(VELD.y1-VELD.y0);
+  } else if(a.knop === 1){
+    const kies = Math.random() < .5 ? spelers.map(s=>s.g) : spel.monsters.filter(m=>m.dood<=0);
+    const q = kies.length ? kies[(Math.random()*kies.length)|0] : null;
+    if(!q) return;
+    gx = q.x + (Math.random()-.5)*26; gy = q.y + (Math.random()-.5)*22;
+  } else {
+    const m = spel.monsters.filter(m=>m.dood<=0);
+    if(!m.length) return;
+    const q = m[(Math.random()*m.length)|0];
+    gx = q.x + (Math.random()-.5)*44; gy = q.y + (Math.random()-.5)*38;
+  }
+  a.mik = {x:gx, y:gy};
+  doeActie(a, gx, gy);
+}
+function stapAi(dt){
+  for(const a of ai){
+    if(a.staat === 'spel') continue;
+    a.loopt = false;
+
+    if(a.aftellen > 0){
+      a.aftellen -= dt;
+      if(a.aftellen <= 0){ a.aftellen = 0; naarSpel(a); }
+      continue;
+    }
+    if(a.knop !== null){ aiKnop(a, dt); continue; }
+    if(a.pauze > 0){ a.pauze -= dt; if(a.pauze <= 0) kiesDoel(a); continue; }
+
+    const d = a.doel - a.x;
+    if(Math.abs(d) < 5){
+      const p = DEUR.find(p => Math.abs(a.x+13 - p.x) < 30);
+      if(p){ a.aftellen = 3; continue; }
+      if(a.knopDoel !== null && kanPakken(a, a.knopDoel)){ pakKnop(a, a.knopDoel); a.knopDoel = null; continue; }
+      a.pauze = .6 + Math.random()*2.5;
+      continue;
+    }
+    a.face = d > 0 ? 1 : -1;
+    a.x += a.face * a.snelheid * dt;
+    a.walk += a.snelheid * dt * .05;
+    a.loopt = true;
+  }
+}
+
+/* ---------- spel bijwerken ---------- */
+function stapSpel(dt){
+  if(spel.raakflits > 0) spel.raakflits -= dt;
+  for(let i=0;i<4;i++){
+    if(knopCool[i] > 0) knopCool[i] -= dt;
+    for(const f of allen) if(f.pcool[i] > 0) f.pcool[i] -= dt;
+  }
+  for(const f of allen) if(f.actieCool > 0) f.actieCool -= dt;
+  if(jij.knop !== null){ jij.beurt -= dt; if(jij.beurt <= 0) laatKnopLos(jij); }
+  if(spel.bliksem){
+    const b = spel.bliksem;
+    if(b.wacht > 0){
+      b.wacht -= dt;
+      if(b.wacht <= 0){                              // nu pas slaat hij in
+        noot(1200, .25, .22, 'square', .12);
+        for(const m of spel.monsters) if(m.dood<=0 && Math.hypot(m.x-b.x, m.y-b.y) < 22) m.dood = 6;
+        for(const f of levend()) if(Math.hypot(f.g.x-b.x, f.g.y-b.y) < 22) uitSpel(f);
+      }
+    } else {
+      b.tijd -= dt;
+      if(b.tijd <= 0) spel.bliksem = null;
+    }
+  }
+
+  // jij in het spel
+  if(jij.staat === 'spel' && jij.g){
+    const g = jij.g;
+    const dx = (key['d']||key['arrowright']?1:0) - (key['a']||key['arrowleft']?1:0);
+    const dy = (key['s']||key['arrowdown']?1:0) - (key['w']||key['arrowup']?1:0);
+    const len = Math.hypot(dx,dy) || 1;
+    g.x += dx/len*84*dt; g.y += dy/len*84*dt;
+    if(dx) g.face = dx > 0 ? 1 : -1;
+    if(dx||dy) g.walk += dt*4;
+    if(tik(' ') && g.z <= 0){ g.vz = 152; noot(520, .12, .12, 'square', 1.8); }
+    g.tijd += dt;
+  }
+
+  // a.i. in het spel
+  for(const a of ai){
+    if(a.staat !== 'spel' || !a.g) continue;
+    const g = a.g;
+    g.tijd += dt; g.denk -= dt;
+    if(g.denk <= 0 || !g.doel){
+      g.denk = .35 + Math.random()*.7;
+      const m = dichtstbij(g, spel.monsters);
+      if(m && Math.hypot(m.x-g.x, m.y-g.y) < 125 && Math.random() < .92){
+        const hoek = Math.atan2(g.y-m.y, g.x-m.x) + (Math.random()-.5)*.8;
+        g.doel = {x: Math.max(VELD.x0, Math.min(VELD.x1, g.x + Math.cos(hoek)*170)),
+                  y: Math.max(VELD.y0, Math.min(VELD.y1, g.y + Math.sin(hoek)*120))};
+      } else {
+        g.doel = {x: VELD.x0 + Math.random()*(VELD.x1-VELD.x0),
+                  y: VELD.y0 + Math.random()*(VELD.y1-VELD.y0)};
+      }
+    }
+    const dx = g.doel.x-g.x, dy = g.doel.y-g.y, d = Math.hypot(dx,dy);
+    if(d > 3){
+      g.x += dx/d*78*dt; g.y += dy/d*78*dt;
+      g.face = dx > 0 ? 1 : -1; g.walk += dt*4;
+    }
+    const dicht = dichtstbij(g, spel.monsters);
+    if(g.z <= 0 && dicht && Math.hypot(dicht.x-g.x, dicht.y-g.y) < 34 && Math.random() < .6) g.vz = 152;
+  }
+
+  // zwaartekracht en veldgrenzen
+  for(const f of levend()){
+    const g = f.g;
+    g.x = Math.max(VELD.x0, Math.min(VELD.x1, g.x));
+    g.y = Math.max(VELD.y0, Math.min(VELD.y1, g.y));
+    if(g.z > 0 || g.vz > 0){
+      g.vz -= 420*dt; g.z += g.vz*dt;
+      if(g.z <= 0){ g.z = 0; g.vz = 0; }
+    }
+  }
+
+  // geworpen monsters
+  for(let i=spel.worpen.length-1; i>=0; i--){
+    const w = spel.worpen[i];
+    w.t += dt;
+    if(w.t >= w.duur){
+      spel.monsters.push(nieuwMonster(w.gx, w.gy));
+      spel.worpen.splice(i,1);
+      noot(200, .2, .16, 'sawtooth', .5);
+    }
+  }
+
+  // monsters
+  for(const m of spel.monsters){
+    if(m.dood > 0){ m.dood -= dt; if(m.dood <= 0) Object.assign(m, nieuwMonster()); continue; }
+    m.wob += dt*3;
+
+    // ieder monster kiest zelf een speler om achteraan te gaan
+    m.kies -= dt;
+    const inVeld = levend();
+    if(m.kies <= 0 || !m.jaagt || m.jaagt.staat !== 'spel'){
+      m.kies = 3 + Math.random()*5;
+      m.jaagt = inVeld.length ? inVeld[(Math.random()*inVeld.length)|0] : null;
+      m.hoek = Math.random()*Math.PI*2;          // van welke kant hij aankomt
+    }
+    const doel = (m.jaagt && m.jaagt.g) ? m.jaagt.g : null;
+    const v = 34*m.snel;
+    if(doel){
+      const mx = doel.x + Math.cos(m.hoek + m.wob*.12)*24;
+      const my = doel.y + Math.sin(m.hoek + m.wob*.12)*17;
+      const dx = mx-m.x, dy = my-m.y, d = Math.hypot(dx,dy)||1;
+      m.x += dx/d*v*dt; m.y += dy/d*v*dt;
+    } else {
+      m.x += Math.sin(m.wob*.4)*16*dt; m.y += Math.cos(m.wob*.3)*12*dt;
+    }
+
+    // niet op elkaar kruipen
+    for(const o of spel.monsters){
+      if(o === m || o.dood > 0) continue;
+      const dx = m.x-o.x, dy = m.y-o.y, d = Math.hypot(dx,dy);
+      if(d > 0 && d < 15){ m.x += dx/d*26*dt; m.y += dy/d*26*dt; }
+    }
+    m.x = Math.max(VELD.x0-10, Math.min(VELD.x1+10, m.x));
+    m.y = Math.max(VELD.y0-10, Math.min(VELD.y1+10, m.y));
+    for(const f of levend()){
+      if(f.g.z < 11 && Math.hypot(f.g.x-m.x, f.g.y-m.y) < 10) uitSpel(f);
+    }
+  }
+
+  // de reus
+  if(spel.reus){
+    const r = spel.reus;
+    if(r.weg){
+      r.x += 130*dt;
+      if(r.x > GW+260) spel.reus = null;
+    }
+    if(r.slag){
+      if(r.slag.timer > 0){
+        r.slag.timer -= dt;
+        if(r.slag.timer <= 0){
+          r.slag.klap = .55;
+          noot(55, .6, .45, 'sawtooth', .3);
+          for(const f of levend()) if(Math.hypot(f.g.x-r.slag.x, f.g.y-r.slag.y) < 34) uitSpel(f);
+          for(const m of spel.monsters) if(m.dood<=0 && Math.hypot(m.x-r.slag.x, m.y-r.slag.y) < 30) m.dood = 6;
+        }
+      } else {
+        r.slag.klap -= dt;
+        if(r.slag.klap <= -1) r.slag = null;
+      }
+    }
+  }
+  muis.klik = false;
+}
+
+/* ---------- tekenen: in het scherm ---------- */
+function tekenAchtergrond(){
+  ctx.fillStyle = S_LUCHT; ctx.fillRect(0,0,GW,GH);
+  ctx.fillStyle = '#4E4E42';
+  ctx.beginPath(); ctx.arc(GW-70, 46, 17, 0, 7); ctx.fill();
+  ctx.fillStyle = '#3A3A31';
+  for(let i=0;i<26;i++) ctx.fillRect((i*137)%GW, (i*61)%110+8, 2, 2);
+  ctx.fillStyle = S_VER;
+  ctx.beginPath(); ctx.moveTo(0,GH);
+  for(let x=0;x<=GW;x+=8) ctx.lineTo(x, 116 + Math.sin(x*.011)*22 + Math.sin(x*.031)*9);
+  ctx.lineTo(GW,GH); ctx.fill();
+}
+function tekenVoorgrond(){
+  ctx.fillStyle = S_DICHT;
+  ctx.beginPath(); ctx.moveTo(0,GH);
+  for(let x=0;x<=GW;x+=8) ctx.lineTo(x, 144 + Math.sin(x*.017+2)*13);
+  ctx.lineTo(GW,GH); ctx.fill();
+  ctx.fillStyle = S_VLOER; ctx.fillRect(0, VELD.y0, GW, GH-VELD.y0);
+  ctx.strokeStyle = S_LIJN; ctx.lineWidth = 1;
+  for(let y=VELD.y0+18; y<GH; y+=26){ ctx.beginPath(); ctx.moveTo(0,y+.5); ctx.lineTo(GW,y+.5); ctx.stroke(); }
+}
+function tekenReus(){
+  const r = spel.reus, x = r.x;
+  ctx.fillStyle = S_REUS;
+  ctx.beginPath();
+  ctx.moveTo(x-160, 150); ctx.quadraticCurveTo(x-125, 14, x, 8);
+  ctx.quadraticCurveTo(x+125, 14, x+160, 150); ctx.closePath(); ctx.fill();
+  let mx = x, my = 70;
+  const doel = dichtstbij({x, y:70}, levend().map(f=>f.g));
+  if(doel){
+    const dx = doel.x-x, dy = doel.y-70, d = Math.hypot(dx,dy)||1;
+    mx = x + dx/d*10; my = 70 + dy/d*8;
+  }
+  ctx.fillStyle = PAPER;
+  ctx.beginPath(); ctx.ellipse(x, 70, 32, 27, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#0B0B08';
+  ctx.beginPath(); ctx.arc(mx, my, 13, 0, 7); ctx.fill();
+  if(r.bestuurder) txt(r.bestuurder.naam, x, 26, 9, '600', 'center', r.bestuurder.isJij ? SIGNAL : '#D8D7D0');
+}
+function tekenSlag(){
+  const r = spel.reus; if(!r || !r.slag) return;
+  const s = r.slag;
+  if(s.timer > 0){
+    const k = 1 - s.timer/.75;
+    ctx.strokeStyle = SIGNAL; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(s.x, s.y, 40-24*k, 15-9*k, 0, 0, 7); ctx.stroke();
+    const vy = -70 + (s.y+70)*k;
+    ctx.fillStyle = S_REUS; rr(s.x-26, vy-40, 52, 46, 16); ctx.fill();
+  } else if(s.klap > 0){
+    ctx.globalAlpha = Math.max(0, s.klap/.55);
+    ctx.strokeStyle = PAPER; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.ellipse(s.x, s.y, 34+(1-s.klap/.55)*40, 13+(1-s.klap/.55)*16, 0, 0, 7); ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = S_REUS; rr(s.x-26, s.y-42, 52, 46, 16); ctx.fill();
+  }
+}
+function tekenBliksem(){
+  const b = spel.bliksem; if(!b) return;
+  if(b.wacht > 0){                                   // waarschuwing op de grond
+    const k = 1 - b.wacht/.5;
+    ctx.strokeStyle = SIGNAL; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(b.x, b.y, 30-16*k, 12-6*k, 0, 0, 7); ctx.stroke();
+    return;
+  }
+  ctx.globalAlpha = Math.min(1, b.tijd*3);
+  ctx.strokeStyle = PAPER; ctx.lineWidth = 3;
+  ctx.beginPath();
+  let x = b.x, y = 0;
+  ctx.moveTo(x, y);
+  while(y < b.y){ y += 14 + Math.random()*12; x += (Math.random()-.5)*22; ctx.lineTo(x, Math.min(y, b.y)); }
+  ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(b.x, b.y, 26, 10, 0, 0, 7); ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+function tekenWorp(w){                       // vliegt door de hal het scherm in
+  const k = w.t/w.duur;
+  const x = w.x0 + (w.x1-w.x0)*k;
+  const y = w.y0 + (w.y1-w.y0)*k - Math.sin(k*Math.PI)*110;
+  const binnen = x > SCH.x && x < SCH.x+SCH.w && y > SCH.y && y < SCH.y+SCH.h;
+  ctx.strokeStyle = SIGNAL; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.ellipse(w.x1, w.y1, 14, 5, 0, 0, 7); ctx.stroke();
+  ctx.save(); ctx.translate(x, y); ctx.rotate(k*7);
+  monstervorm(0, 0, MS*1.5, 0, binnen ? S_MONSTER : INK, binnen ? '#15150F' : PAPER);
+  ctx.restore();
+}
+function monstervorm(x, y, s, w, kleur, oog){
+  ctx.fillStyle = kleur;
+  ctx.beginPath();
+  ctx.moveTo(x-11*s, y+9*s); ctx.lineTo(x-11*s, y-2*s);
+  ctx.lineTo(x-7*s, y-11*s+w); ctx.lineTo(x-2*s, y-4*s);
+  ctx.lineTo(x+3*s, y-12*s-w); ctx.lineTo(x+8*s, y-3*s);
+  ctx.lineTo(x+11*s, y-9*s+w); ctx.lineTo(x+11*s, y+9*s);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = oog;
+  ctx.beginPath(); ctx.arc(x-4*s, y+1*s, 2.2*s, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.arc(x+4*s, y+1*s, 2.2*s, 0, 7); ctx.fill();
+}
+function tekenMonster(m){
+  monstervorm(m.x, m.y, MS, Math.sin(m.wob)*2*MS, S_MONSTER, '#15150F');
+  if(m.hp < 3){ ctx.fillStyle = SIGNAL; ctx.fillRect(m.x-11*MS, m.y+9*MS, 22*MS*(m.hp/3), 2); }
+}
+function tekenSpelertje(f){
+  const g = f.g, px = g.x, py = g.y - (g.z||0), ph = Math.sin(g.walk*3.2);
+  if(g.z > 1){
+    ctx.fillStyle = 'rgba(0,0,0,.35)';
+    ctx.beginPath(); ctx.ellipse(g.x, g.y+10, 7, 2.6, 0, 0, 7); ctx.fill();
+  }
+  ctx.strokeStyle = f.isJij ? SIGNAL : PAPER; ctx.lineWidth = 3.4;
+  ctx.beginPath();
+  ctx.moveTo(px, py+2); ctx.lineTo(px+ph*4, py+11);
+  ctx.moveTo(px, py+2); ctx.lineTo(px-ph*4, py+11);
+  ctx.stroke();
+  ctx.fillStyle = f.isJij ? SIGNAL : PAPER;
+  rr(px-4, py-8, 8, 12, 3.5); ctx.fill();
+  ctx.beginPath(); ctx.arc(px, py-11, 4.4, 0, 7); ctx.fill();
+  txt(f.naam, px, py-19, 8, '600', 'center', f.isJij ? SIGNAL : '#D8D7D0');
+  txt(Math.round(g.tijd)+'s', px, py+22, 8, '400', 'center', '#A9A89F');
+}
+function tekenSpelscherm(){
+  ctx.save();
+  ctx.beginPath(); ctx.rect(SCH.x, SCH.y, SCH.w, SCH.h); ctx.clip();
+  ctx.translate(SCH.x, SCH.y);
+
+  tekenAchtergrond();
+  if(spel.reus) tekenReus();
+  tekenVoorgrond();
+
+  const spelers = levend();
+  const dingen = spel.monsters.filter(m=>m.dood<=0).map(m=>({y:m.y, m}))
+    .concat(spelers.map(f=>({y:f.g.y, f})));
+  dingen.sort((a,b)=>a.y-b.y);
+  for(const d of dingen){ if(d.m) tekenMonster(d.m); else tekenSpelertje(d.f); }
+  tekenSlag();
+  tekenBliksem();
+
+  txt('OVERLEVEN', 14, 24, 12, '600', 'left', '#B3B2AA');
+  if(spelers.length === 0) txt('niemand in het veld', GW/2, GH-16, 11, '400', 'center', '#8A8981');
+
+  // wie de knoppen bedient
+  let ry = 24;
+  for(let i=0;i<4;i++){
+    const e = knopEigenaar[i];
+    if(!e) continue;
+    txt(e.naam+'  '+KNOP_NAAM[i]+'  '+Math.ceil(e.beurt)+'s', GW-14, ry, 10, '600', 'right',
+        e.isJij ? SIGNAL : '#D8D7D0');
+    ry += 15;
+  }
+
+  if(spel.raakflits > 0){
+    ctx.globalAlpha = spel.raakflits*3;
+    ctx.fillStyle = PAPER; ctx.fillRect(0,0,GW,GH); ctx.globalAlpha = 1;
+  }
+
+  // jouw vizier
+  if(jij.knop !== null && jij.knop !== 2){
+    const gx = muis.x - SCH.x, gy = muis.y - SCH.y;
+    if(gx>0 && gx<GW && gy>0 && gy<GH){
+      const klaar = jij.actieCool <= 0;
+      ctx.strokeStyle = klaar ? SIGNAL : '#8A8981'; ctx.lineWidth = 2;
+      if(jij.knop === 0){
+        ctx.beginPath(); ctx.ellipse(gx, gy, 18, 7, 0, 0, 7); ctx.stroke();
+      } else if(jij.knop === 1){
+        ctx.beginPath(); ctx.moveTo(gx, gy-24); ctx.lineTo(gx-7, gy-4);
+        ctx.lineTo(gx+5, gy-2); ctx.lineTo(gx-3, gy+18); ctx.stroke();
+      } else {
+        ctx.beginPath(); ctx.arc(gx, gy, 13, 0, 7); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(gx-20, gy); ctx.lineTo(gx-6, gy);
+        ctx.moveTo(gx+6, gy);  ctx.lineTo(gx+20, gy);
+        ctx.moveTo(gx, gy-20); ctx.lineTo(gx, gy-6);
+        ctx.moveTo(gx, gy+6);  ctx.lineTo(gx, gy+20);
+        ctx.stroke();
+      }
+    }
+  }
+  ctx.restore();
+}
+
+/* ---------- tekenen: de hal ---------- */
+function tekenDeur(p){
+  const dw = 66, dh = 124, x = p.x-dw/2, y = GROUND-dh;
+  const puls = .55 + Math.sin(t*1.6)*.12;
+  ctx.globalAlpha = puls; ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.moveTo(p.x-16, GROUND); ctx.lineTo(p.x+16, GROUND);
+  ctx.lineTo(p.x+52, GROUND+52); ctx.lineTo(p.x-52, GROUND+52);
+  ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+
+  ctx.fillStyle = INK;
+  ctx.beginPath();
+  ctx.moveTo(x, GROUND); ctx.lineTo(x, y+24);
+  ctx.quadraticCurveTo(p.x, y-16, x+dw, y+24);
+  ctx.lineTo(x+dw, GROUND); ctx.closePath(); ctx.fill();
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(x+8, GROUND); ctx.lineTo(x+8, y+28);
+  ctx.quadraticCurveTo(p.x, y-4, x+dw-8, y+28);
+  ctx.lineTo(x+dw-8, GROUND); ctx.closePath(); ctx.clip();
+  ctx.fillStyle = '#0B0B08'; ctx.fillRect(x, y-20, dw, dh+30);
+  ctx.globalAlpha = puls; ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(p.x-7, y+10, 14, dh);
+  ctx.globalAlpha = puls*.45; ctx.fillRect(p.x-17, y+16, 34, dh);
+  ctx.globalAlpha = 1; ctx.restore();
+}
+function tekenConsole(){
+  ctx.fillStyle = '#E4E3DD'; rr(CONS.x, CONS.y, CONS.w, CONS.h, 8); ctx.fill();
+  ctx.strokeStyle = INK; ctx.lineWidth = 1.5;
+  rr(CONS.x+.75, CONS.y+.75, CONS.w-1.5, CONS.h-1.5, 8); ctx.stroke();
+  for(let i=0;i<4;i++){
+    const eig = knopEigenaar[i], koud = knopCool[i] > 0;
+    ctx.fillStyle = eig ? (eig === jij ? SIGNAL : '#B9B8B1') : PAPER;
+    ctx.beginPath(); ctx.arc(knopX[i], KNOP_Y, 15, 0, 7); ctx.fill();
+    ctx.strokeStyle = INK; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(knopX[i], KNOP_Y, 15, 0, 7); ctx.stroke();
+    txt(String(i+1), knopX[i], KNOP_Y+4, 11, '600', 'center', eig === jij ? PAPER : '#6E6E64');
+    txt(KNOP_NAAM[i], knopX[i], CONS.y+16, 9, '600', 'center', koud ? GREY : '#6E6E64');
+    if(koud) txt(Math.ceil(knopCool[i])+'s', knopX[i], KNOP_Y+30, 9, '400', 'center', GREY);
+    else if(jij.pcool[i] > 0) txt('JIJ '+Math.ceil(jij.pcool[i])+'s', knopX[i], KNOP_Y+30, 9, '400', 'center', GREY);
+  }
+}
+function tekenFiguur(f){
+  const px = Math.round(f.x), py = GROUND-56;
+  const ph = f.loopt ? Math.sin(f.walk*3.2) : 0;
+  ctx.strokeStyle = INK; ctx.fillStyle = INK; ctx.lineWidth = 7;
+  ctx.beginPath();
+  ctx.moveTo(px+13, py+34); ctx.lineTo(px+13+ph*9, py+56);
+  ctx.moveTo(px+13, py+34); ctx.lineTo(px+13-ph*9, py+56);
+  ctx.stroke();
+  ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.moveTo(px+13, py+22); ctx.lineTo(px+13-ph*7+f.face*3, py+34); ctx.stroke();
+  ctx.fillStyle = f.isJij ? SIGNAL : INK;
+  rr(px+5, py+13, 16, 24, 7); ctx.fill();
+  ctx.fillStyle = INK;
+  ctx.beginPath(); ctx.arc(px+13, py+8, 8.5, 0, 7); ctx.fill();
+  ctx.fillStyle = PAPER;
+  ctx.beginPath(); ctx.arc(px+13+f.face*3.5, py+7, 1.7, 0, 7); ctx.fill();
+  if(f.knop === 0 && f.actieCool <= 0){          // hij houdt een monster vast
+    monstervorm(px+13+f.face*17, py+22, MS*1.5, Math.sin(t*6), INK, PAPER);
+  }
+  txt(f.naam, px+13, py-10, 10, '600', 'center', f.isJij ? SIGNAL : '#6E6E64');
+  if(f.aftellen > 0) txt(String(Math.ceil(f.aftellen)), px+13, py-24, 30, '700', 'center', SIGNAL);
+}
+function teken(){
+  ctx.fillStyle = PAPER; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = '#E7E6E1';
+  for(let x=0;x<W;x+=240) ctx.fillRect(x, 0, 2, GROUND);
+  ctx.fillStyle = SOFT; ctx.fillRect(0, GROUND-3, W, 3);
+  ctx.fillStyle = '#E4E3DD'; ctx.fillRect(0, GROUND, W, H-GROUND);
+  ctx.fillStyle = GREY;
+  for(let x=0;x<W;x+=48) ctx.fillRect(x, GROUND+16, 26, 1);
+
+  for(const p of DEUR) tekenDeur(p);
+  ctx.fillStyle = INK; rr(KAST.x, KAST.y, KAST.w, GROUND-KAST.y, 12); ctx.fill();
+  tekenSpelscherm();
+  tekenConsole();
+
+  const inHal = allen.filter(f => f.staat !== 'spel').sort((a,b)=>a.x-b.x);
+  for(const f of inHal) tekenFiguur(f);
+  for(const w of spel.worpen) tekenWorp(w);
+
+  if(jij.staat !== 'spel'){
+    const i = knopX.findIndex(kx => Math.abs(jij.x+13-kx) < 42);
+    if(i >= 0 && jij.knop !== i && kanPakken(jij, i)){
+      ctx.fillStyle = INK; rr(knopX[i]-60, CONS.y-42, 120, 26, 13); ctx.fill();
+      txt('ENTER  —  '+KNOP_NAAM[i], knopX[i], CONS.y-25, 10, '600', 'center', PAPER);
+    }
+    if(jij.knop !== null){
+      const klaar = jij.actieCool <= 0;
+      const tekst = jij.knop === 2
+        ? (klaar ? 'A D  BEWEEG   SPATIE  SLA' : 'A D  BEWEEG   '+Math.ceil(jij.actieCool)+'s')
+        : (klaar ? (jij.knop === 0 ? 'GOOI HEM IN HET SCHERM' : 'KLIK IN HET SCHERM')
+                 : 'WACHT  '+Math.ceil(jij.actieCool)+'s');
+      ctx.fillStyle = klaar ? SIGNAL : INK;
+      rr(knopX[jij.knop]-84, CONS.y-42, 168, 26, 13); ctx.fill();
+      txt(tekst+'   ('+Math.ceil(jij.beurt)+'s)', knopX[jij.knop], CONS.y-25, 10, '600', 'center', PAPER);
+    }
+  }
+}
+
+/* ---------- lus ---------- */
+let last = performance.now();
+function frame(now){
+  const dt = Math.min((now-last)/1000, .05); last = now; t += dt;
+  try{ stapJij(dt); stapAi(dt); stapSpel(dt); teken(); }
+  catch(err){ console.error(err); }
+  for(const k in edge) edge[k] = false;
+  requestAnimationFrame(frame);
+}
+toonScores();
+fit(); cv.focus();
+requestAnimationFrame(frame);
+})();
+</script>
